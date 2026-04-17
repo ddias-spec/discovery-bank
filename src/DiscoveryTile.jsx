@@ -458,8 +458,6 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     return true;
   });
 
-  const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
-
   const wrap = (ch) => (
     <div data-theme={theme} className="wrap-outer" style={{ fontFamily: "var(--font)", background: "var(--bg)", color: "var(--text)", position: "relative", overflow: "hidden" }}>
       <style>{CSS}</style>
