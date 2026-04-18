@@ -1,6 +1,29 @@
-import { useState, useEffect, useCallback } from "react";
-import { db } from "./db";
-import { supabase } from "./supabaseClient";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
+
+// Isolated text input — local state for smooth typing, debounced sync to parent
+const NoteInput = memo(({ value, onChange, placeholder, rows, className, style }) => {
+  const [local, setLocal] = useState(value || "");
+  const timer = useRef(null);
+  const isMounted = useRef(true);
+  const lastSynced = useRef(value || "");
+  // Only accept parent value if it changed externally (not from our own onChange)
+  useEffect(() => {
+    if (value !== lastSynced.current) { setLocal(value || ""); lastSynced.current = value || ""; }
+  }, [value]);
+  useEffect(() => () => { isMounted.current = false; clearTimeout(timer.current); }, []);
+  const handleChange = (e) => {
+    const v = e.target.value;
+    setLocal(v);
+    lastSynced.current = v;
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => { if (isMounted.current) onChange(v); }, 300);
+  };
+  const handleBlur = () => { clearTimeout(timer.current); lastSynced.current = local; onChange(local); };
+  if (rows === 0 || style?.height) {
+    return <input value={local} onChange={handleChange} onBlur={handleBlur} placeholder={placeholder} className={className} style={style}/>;
+  }
+  return <textarea value={local} onChange={handleChange} onBlur={handleBlur} placeholder={placeholder} rows={rows || 1} className={className} style={style}/>;
+});
 
 // ═══════════════════════════════════════════
 // DATA
@@ -10,7 +33,7 @@ const RESTAURANT_TOP = {
   phase: "Key Info",
   title: "Key Details",
   sections: [
-    { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noNotes: true, noPain: true, noGoal: true },
+    { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noPain: true, noGoal: true },
     { id: "gpv", label: "GPV", placeholder: "Annual card processing volume…", noPain: true, noGoal: true },
     { id: "service_and_flow", label: "Service Type / Covers", placeholder: "FSR, QSR, café, pub, bar… Covers per day/week…", noPain: true, noGoal: true },
   ]
@@ -20,7 +43,7 @@ const RETAIL_TOP = {
   phase: "Key Info",
   title: "Key Details",
   sections: [
-    { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noNotes: true, noPain: true, noGoal: true },
+    { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noPain: true, noGoal: true },
     { id: "gpv", label: "GPV", placeholder: "Annual card processing volume…", noPain: true, noGoal: true },
     { id: "retail_type", label: "Type of Retail", placeholder: "Apparel, home & gifts, garden centre, electronics, grocery, alcohol…", noPain: true, noGoal: true },
   ]
@@ -89,16 +112,33 @@ const SHARED_CLOSING = {
   ]
 };
 
-const getPhases = (v) => {
-  if (v === "restaurant") return [RESTAURANT_TOP, RESTAURANT_SETUP, SHARED_CLOSING];
-  return [RETAIL_TOP, RETAIL_SETUP, SHARED_CLOSING];
+const BDR_CLOSING = {
+  phase: "Close",
+  title: "Next Steps & Handoff",
+  sections: [
+    { id: "bdr_timeline", label: "Timeline", placeholder: "", noPain: true, noGoal: true, noNotes: true,
+      dropdown: true, dropdownType: "timeline", options: ["ASAP", "1–3 weeks", "1 month", "2 months", "3 months", "4–6 months", "6+ months"], dropdownPlaceholder: "Select timeline…" },
+    { id: "bdr_barriers", label: "Contract Length", placeholder: "Lock-in period? End date? Any break clauses?…", noPain: true, noGoal: true,
+      dropdown: true, dropdownType: "contract", options: ["No contract", "Monthly rolling", "3 months", "6 months", "12 months", "12+ months", "Unknown"], dropdownPlaceholder: "Contract length…" },
+    { id: "bdr_dm_contact", label: "Confirmed DM Contact Details", placeholder: "Email address, mobile number…", noPain: true, noGoal: true,
+      dropdown: true, dropdownType: "confirmed", options: ["Yes — confirmed", "No — not yet", "Partial — email only", "Partial — phone only"], dropdownPlaceholder: "Contact confirmed?…" },
+    { id: "bdr_outcome", label: "Outcome", placeholder: "", noPain: true, noGoal: true, noNotes: true,
+      dropdown: true, dropdownType: "outcome", options: ["Hot Handoff → AE Now", "Booked Meeting"], dropdownPlaceholder: "Select outcome…" },
+    { id: "bdr_meeting_details", label: "Meeting Date & Time", placeholder: "Date, time, attendees, AE name if known…", noPain: true, noGoal: true },
+  ]
 };
-const getAllSections = (v) => getPhases(v).flatMap(p => p.sections);
+
+const getPhases = (v, role) => {
+  const closing = role === "bdr" ? BDR_CLOSING : SHARED_CLOSING;
+  if (v === "restaurant") return [RESTAURANT_TOP, RESTAURANT_SETUP, closing];
+  return [RETAIL_TOP, RETAIL_SETUP, closing];
+};
+const getAllSections = (v, role) => getPhases(v, role).flatMap(p => p.sections);
 
 // ═══════════════════════════════════════════
 // STYLES
 // ═══════════════════════════════════════════
-export const CSS = `
+const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
   :root,[data-theme="dark"]{
     --bg:#13131a;--glass:rgba(255,255,255,0.035);--glass-border:rgba(255,255,255,0.07);
@@ -171,6 +211,10 @@ export const CSS = `
   .pf-label{font-size:10px;font-weight:700;min-width:50px;text-transform:uppercase;letter-spacing:.04em;padding-top:1px}
   .progress-ring{transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)}
 
+  /* ── Role toggle label switching ── */
+  .role-label-short{display:none}
+  .role-label-full{display:inline}
+
   /* ── Responsive ── */
   .wrap-outer{min-height:100vh;padding:24px 16px;transition:background .4s,color .4s}
   .container{max-width:720px;margin:0 auto;width:100%}
@@ -186,6 +230,31 @@ export const CSS = `
     .select-card{padding:28px 18px!important;border-radius:16px!important}
     .select-card-title{font-size:16px!important}
     .select-icon{width:48px!important;height:48px!important;border-radius:14px!important}
+    .role-label-full{display:none!important}
+    .role-label-short{display:inline!important}
+    .role-toggle-btn{font-size:12px!important;padding:8px 20px!important}
+    .feedback-btn-wrap{bottom:14px!important;right:14px!important}
+    .feedback-btn{width:42px!important;height:42px!important;border-radius:13px!important}
+    .feedback-label{display:none!important}
+    .feedback-modal{width:calc(100vw - 24px)!important;right:12px!important;left:12px!important;bottom:12px!important;border-radius:16px!important}
+    .feedback-modal-inner{padding:16px 14px 14px!important}
+  }
+
+  /* Narrow windows — switch to short label */
+  @media(max-width:480px){
+    .role-label-full{display:none!important}
+    .role-label-short{display:inline!important}
+    .role-toggle-btn{font-size:13px!important;padding:9px 24px!important}
+    .feedback-btn-wrap{bottom:18px!important;right:18px!important}
+    .feedback-label{display:none!important}
+    .feedback-modal{width:calc(100vw - 32px)!important;right:16px!important;left:16px!important;bottom:16px!important}
+    .feedback-modal-inner{padding:18px 16px 16px!important}
+  }
+
+  /* Medium — show full labels */
+  @media(min-width:481px){
+    .role-label-full{display:inline}
+    .role-label-short{display:none}
   }
 
   /* Tablets */
@@ -227,7 +296,7 @@ export const CSS = `
 // ═══════════════════════════════════════════
 // ICONS
 // ═══════════════════════════════════════════
-export const I = {
+const I = {
   Check: () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Copy: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10 4V2.5A1.5 1.5 0 008.5 1H2.5A1.5 1.5 0 001 2.5v6A1.5 1.5 0 002.5 10H4" stroke="currentColor" strokeWidth="1.3"/></svg>,
   Done: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="var(--accent)"/><path d="M4 7L6 9L10 5" stroke="#13131a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -265,13 +334,11 @@ const ProgressRing = ({ pct }) => {
 // ═══════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════
-export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: toggleThemeProp }) {
-  const [theme, setTheme] = useState(themeProp || "dark");
-  useEffect(() => { if (themeProp) setTheme(themeProp); }, [themeProp]);
-  const toggleTheme = toggleThemeProp || (() => setTheme(t => t === "dark" ? "light" : "dark"));
-
+export default function DiscoveryTile() {
+  const [theme, setTheme] = useState("dark");
   const [screen, setScreen] = useState("select");
   const [vertical, setVertical] = useState(null);
+  const [role, setRole] = useState("ae"); // "ae" | "bdr"
   const [checked, setChecked] = useState({});
   const [notes, setNotes] = useState({});
   const [copied, setCopied] = useState(null);
@@ -288,12 +355,15 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
   const [sectionExtras, setSectionExtras] = useState({});
   // Which dropdown is open: { sectionId: "pain" | "goal" | null }
   const [openDropdown, setOpenDropdown] = useState({});
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackStep, setFeedbackStep] = useState(0); // 0=rating, 1=category, 2=message, 3=sent
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackCategory, setFeedbackCategory] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
 
   const loadIndex = useCallback(async () => {
-    try {
-      const data = await db.loadDiscoveries();
-      setSavedList(data.map(d => ({ id: d.discovery_id, vertical: d.vertical, businessName: d.business_name, sfUrl: d.sf_url, recordType: d.record_type, completion: d.completion, savedAt: d.saved_at })));
-    } catch { setSavedList([]); }
+    try { const r = await window.storage.get("discovery-index"); if (r) setSavedList(JSON.parse(r.value)); } catch { setSavedList([]); }
   }, []);
   useEffect(() => { loadIndex(); }, [loadIndex]);
 
@@ -348,8 +418,8 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     });
   };
 
-  const phases = vertical ? getPhases(vertical) : [];
-  const allSections = vertical ? getAllSections(vertical) : [];
+  const phases = vertical ? getPhases(vertical, role) : [];
+  const allSections = vertical ? getAllSections(vertical, role) : [];
   const total = allSections.length;
   const doneItems = Object.values(checked).filter(Boolean).length;
   const pct = total ? Math.round((doneItems / total) * 100) : 0;
@@ -363,14 +433,17 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
 
   const formatSF = (n, c, ext, v) => {
     n = n || notes; c = c || checked; ext = ext || sectionExtras; v = v || vertical;
-    let o = `Discovery Notes — ${v === "restaurant" ? "Restaurant" : "Retail"}\n═══════════════════════════════\n\n`;
+    const r = arguments[4] || role;
+    let o = `Discovery Notes — ${v === "restaurant" ? "Restaurant" : "Retail"} (${r === "bdr" ? "BDR" : "AE"})\n═══════════════════════════════\n\n`;
     if (n.businessName) o += `Business: ${n.businessName}\n\n`;
     o += `Date: ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}\n\n`;
     if (n.sfUrl) o += `Salesforce: ${n.sfUrl}\nRecord Type: ${recType(n.sfUrl) || "Unknown"}\n\n`;
-    getPhases(v).forEach(phase => {
+    getPhases(v, r).forEach(phase => {
       o += `── ${phase.title} ──\n\n`;
       phase.sections.forEach(s => {
-        o += `${c[s.id] ? "✓" : "○"} ${s.label}: ${n[s.id] || ""}\n`;
+        const dropVal = n[s.id + "_dropdown"] || "";
+        if (dropVal) o += `${c[s.id] ? "✓" : "○"} ${s.label}: [${dropVal}] ${n[s.id] || ""}\n`;
+        else o += `${c[s.id] ? "✓" : "○"} ${s.label}: ${n[s.id] || ""}\n`;
         const ex = ext[s.id];
         if (ex) {
           ex.pains?.forEach((p, i) => {
@@ -386,7 +459,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
       });
     });
     const d = Object.values(c).filter(Boolean).length;
-    o += `═══════════════════════════════\nDiscovery Completion: ${d}/${getAllSections(v).length} (${Math.round(d / getAllSections(v).length * 100)}%)\n`;
+    o += `═══════════════════════════════\nDiscovery Completion: ${d}/${getAllSections(v, r).length} (${Math.round(d / getAllSections(v, r).length * 100)}%)\n`;
     return o;
   };
 
@@ -395,7 +468,10 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     if (notes.businessName) t += `Business: ${notes.businessName}\n`;
     if (notes.sfUrl) t += `Salesforce: ${notes.sfUrl}\n`;
     if (notes.businessName || notes.sfUrl) t += "\n";
-    t += `${s.label}: ${notes[s.id] || ""}`;
+    t += `${s.label}: `;
+    const dropVal = notes[s.id + "_dropdown"] || "";
+    if (dropVal) t += `[${dropVal}] `;
+    t += notes[s.id] || "";
     const ex = sectionExtras[s.id];
     if (ex) {
       ex.pains?.forEach((p, i) => { if (p.pain) t += `\n  Pain ${i+1}: ${p.pain} | Impact: ${p.impact} | Quantify: ${p.quantify} | Position: ${p.position}`; });
@@ -410,26 +486,21 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     if (!notes.businessName?.trim()) { setSaveStatus("needsName"); setTimeout(() => setSaveStatus(null), 2500); return; }
     setSaveStatus("saving");
     const id = "disc_" + Date.now();
-    const rec = { id, vertical, businessName: notes.businessName, sfUrl: notes.sfUrl || "", recordType: recType(notes.sfUrl), notes: { ...notes }, checked: { ...checked }, sectionExtras: JSON.parse(JSON.stringify(sectionExtras)), completion: pct, savedAt: new Date().toISOString() };
+    const rec = { id, vertical, role, businessName: notes.businessName, sfUrl: notes.sfUrl || "", recordType: recType(notes.sfUrl), notes: { ...notes }, checked: { ...checked }, sectionExtras: JSON.parse(JSON.stringify(sectionExtras)), completion: pct, savedAt: new Date().toISOString() };
     try {
-      await db.saveDiscovery(rec);
-      const nl = [{ id: rec.id, vertical: rec.vertical, businessName: rec.businessName, sfUrl: rec.sfUrl, recordType: rec.recordType, completion: rec.completion, savedAt: rec.savedAt }, ...savedList];
+      await window.storage.set(`discovery:${id}`, JSON.stringify(rec));
+      const nl = [{ id, vertical: rec.vertical, role: rec.role, businessName: rec.businessName, sfUrl: rec.sfUrl, recordType: rec.recordType, completion: rec.completion, savedAt: rec.savedAt }, ...savedList];
+      await window.storage.set("discovery-index", JSON.stringify(nl));
       setSavedList(nl); setSaveStatus("saved");
       setTimeout(() => { setChecked({}); setNotes({}); setSectionExtras({}); setOpenDropdown({}); setOpenPhases({}); setSaveStatus(null); setScreen("select"); setVertical(null); }, 2000);
     } catch { setSaveStatus("error"); setTimeout(() => setSaveStatus(null), 2500); }
   };
 
   const loadDiscovery = async (id) => {
-    try {
-      const data = await db.loadDiscovery(id);
-      if (data) {
-        setDetailRecord({ id: data.discovery_id, vertical: data.vertical, businessName: data.business_name, sfUrl: data.sf_url, recordType: data.record_type, notes: data.notes, checked: data.checked, sectionExtras: data.section_extras, completion: data.completion, savedAt: data.saved_at });
-        setScreen("detail");
-      }
-    } catch {}
+    try { const r = await window.storage.get(`discovery:${id}`); if (r) { setDetailRecord(JSON.parse(r.value)); setScreen("detail"); } } catch {}
   };
   const deleteDiscovery = async (id) => {
-    try { await db.deleteDiscovery(id); const nl = savedList.filter(d => d.id !== id); setSavedList(nl); setDeleteConfirm(null); if (detailRecord?.id === id) setScreen("history"); } catch {}
+    try { await window.storage.delete(`discovery:${id}`); const nl = savedList.filter(d => d.id !== id); await window.storage.set("discovery-index", JSON.stringify(nl)); setSavedList(nl); setDeleteConfirm(null); if (detailRecord?.id === id) setScreen("history"); } catch {}
   };
 
   const filtered = savedList.filter(d => {
@@ -458,6 +529,8 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     return true;
   });
 
+  const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
+
   const wrap = (ch) => (
     <div data-theme={theme} className="wrap-outer" style={{ fontFamily: "var(--font)", background: "var(--bg)", color: "var(--text)", position: "relative", overflow: "hidden" }}>
       <style>{CSS}</style>
@@ -482,33 +555,40 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
       <div style={{ position: "relative", zIndex: 1 }}>
         {ch}
         {/* Block Ecosystem Logo Banner */}
-        <div style={{ margin: "28px auto 0", maxWidth: "100%", overflow: "hidden", position: "relative", padding: "16px 0", animation: "marquee-fade 8s ease-in-out infinite" }}>
-          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "15%", background: "linear-gradient(90deg, var(--bg) 0%, transparent 100%)", zIndex: 2, pointerEvents: "none" }}/>
-          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "15%", background: "linear-gradient(270deg, var(--bg) 0%, transparent 100%)", zIndex: 2, pointerEvents: "none" }}/>
-          <div style={{ display: "flex", animation: "marquee 25s linear infinite", willChange: "transform", width: "fit-content" }}>
+        <div style={{ margin: "36px auto 0", maxWidth: "100%", overflow: "hidden", position: "relative", padding: "20px 0" }}>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "18%", background: "linear-gradient(90deg, var(--bg) 0%, transparent 100%)", zIndex: 2, pointerEvents: "none" }}/>
+          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "18%", background: "linear-gradient(270deg, var(--bg) 0%, transparent 100%)", zIndex: 2, pointerEvents: "none" }}/>
+          <div style={{ display: "flex", animation: "marquee 30s linear infinite", willChange: "transform", width: "fit-content", opacity: 0.35 }}>
             {[0,1,2].map(set => (
-              <div key={set} style={{ display: "flex", paddingRight: 48, gap: 48, alignItems: "center", flexShrink: 0 }}>
+              <div key={set} style={{ display: "flex", paddingRight: 56, gap: 56, alignItems: "center", flexShrink: 0 }}>
                 {/* Block */}
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="3" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="3" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/></svg>
+                <svg width="34" height="34" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="3" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="3" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/></svg>
                 {/* Square */}
-                <svg width="26" height="26" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="24" height="24" rx="5" stroke="var(--marquee-fill)" strokeWidth="2" fill="none"/><rect x="10" y="10" width="10" height="10" rx="2" fill="var(--marquee-fill)"/></svg>
+                <svg width="32" height="32" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="24" height="24" rx="5" stroke="var(--marquee-fill)" strokeWidth="2" fill="none"/><rect x="10" y="10" width="10" height="10" rx="2" fill="var(--marquee-fill)"/></svg>
                 {/* Cash App */}
-                <svg width="26" height="26" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="24" height="24" rx="5" fill="var(--marquee-fill)"/><path d="M15 7v1.5m0 13V23m-3.5-5.5c0 1.4 1.6 2.5 3.5 2.5s3.5-1.1 3.5-2.5-1.6-2.5-3.5-2.5-3.5-1.1-3.5-2.5 1.6-2.5 3.5-2.5 3.5 1.1 3.5 2.5" stroke="var(--marquee-inner)" strokeWidth="2" strokeLinecap="round"/></svg>
+                <svg width="32" height="32" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="24" height="24" rx="5" fill="var(--marquee-fill)"/><path d="M15 7v1.5m0 13V23m-3.5-5.5c0 1.4 1.6 2.5 3.5 2.5s3.5-1.1 3.5-2.5-1.6-2.5-3.5-2.5-3.5-1.1-3.5-2.5 1.6-2.5 3.5-2.5 3.5 1.1 3.5 2.5" stroke="var(--marquee-inner)" strokeWidth="2" strokeLinecap="round"/></svg>
                 {/* Afterpay */}
-                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--marquee-fill)", fontFamily: "var(--font)", letterSpacing: "-0.02em", flexShrink: 0, whiteSpace: "nowrap" }}>afterpay</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: "var(--marquee-fill)", fontFamily: "var(--font)", letterSpacing: "-0.03em", flexShrink: 0, whiteSpace: "nowrap" }}>afterpay</span>
                 {/* Block */}
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="3" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="3" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/></svg>
+                <svg width="34" height="34" viewBox="0 0 28 28" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="3" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="3" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="11" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="3" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="11" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/><rect x="19" y="19" width="6" height="6" rx="1.2" fill="var(--marquee-fill)"/></svg>
                 {/* Square */}
-                <svg width="26" height="26" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="24" height="24" rx="5" stroke="var(--marquee-fill)" strokeWidth="2" fill="none"/><rect x="10" y="10" width="10" height="10" rx="2" fill="var(--marquee-fill)"/></svg>
+                <svg width="32" height="32" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="24" height="24" rx="5" stroke="var(--marquee-fill)" strokeWidth="2" fill="none"/><rect x="10" y="10" width="10" height="10" rx="2" fill="var(--marquee-fill)"/></svg>
                 {/* Cash App */}
-                <svg width="26" height="26" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="24" height="24" rx="5" fill="var(--marquee-fill)"/><path d="M15 7v1.5m0 13V23m-3.5-5.5c0 1.4 1.6 2.5 3.5 2.5s3.5-1.1 3.5-2.5-1.6-2.5-3.5-2.5-3.5-1.1-3.5-2.5 1.6-2.5 3.5-2.5 3.5 1.1 3.5 2.5" stroke="var(--marquee-inner)" strokeWidth="2" strokeLinecap="round"/></svg>
+                <svg width="32" height="32" viewBox="0 0 30 30" fill="none" style={{ flexShrink: 0 }}><rect x="3" y="3" width="24" height="24" rx="5" fill="var(--marquee-fill)"/><path d="M15 7v1.5m0 13V23m-3.5-5.5c0 1.4 1.6 2.5 3.5 2.5s3.5-1.1 3.5-2.5-1.6-2.5-3.5-2.5-3.5-1.1-3.5-2.5 1.6-2.5 3.5-2.5 3.5 1.1 3.5 2.5" stroke="var(--marquee-inner)" strokeWidth="2" strokeLinecap="round"/></svg>
                 {/* Afterpay */}
-                <span style={{ fontSize: 15, fontWeight: 700, color: "var(--marquee-fill)", fontFamily: "var(--font)", letterSpacing: "-0.02em", flexShrink: 0, whiteSpace: "nowrap" }}>afterpay</span>
+                <span style={{ fontSize: 18, fontWeight: 700, color: "var(--marquee-fill)", fontFamily: "var(--font)", letterSpacing: "-0.03em", flexShrink: 0, whiteSpace: "nowrap" }}>afterpay</span>
               </div>
             ))}
           </div>
         </div>
-        <div style={{ textAlign: "center", padding: "12px 16px 16px", fontSize: 11, color: "var(--credit)", letterSpacing: "0.03em", fontWeight: 700 }}>Created by Damani Joseph Dias</div>
+        {/* Credit */}
+        <div style={{ textAlign: "center", padding: "16px 16px 20px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, color: "var(--text2)", fontSize: 11, letterSpacing: "0.02em" }}>
+            <span style={{ width: 24, height: 1, background: "var(--glass-border)", display: "inline-block" }}/>
+            <span style={{ fontWeight: 700 }}>Created by Damani Joseph Dias</span>
+            <span style={{ width: 24, height: 1, background: "var(--glass-border)", display: "inline-block" }}/>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -532,7 +612,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             ].map(f => (
               <div key={f.k} className="pf">
                 <span className="pf-label" style={{ color: "var(--red)" }}>{f.l}</span>
-                <input value={p[f.k]} onChange={e => updatePain(sectionId, i, f.k, e.target.value)} placeholder={f.ph} className="gin" style={{ height: 32, fontSize: 12 }}/>
+                <NoteInput value={p[f.k]} onChange={v => updatePain(sectionId, i, f.k, v)} placeholder={f.ph} rows={0} className="gin" style={{ height: 32, fontSize: 12 }}/>
               </div>
             ))}
           </div>
@@ -555,7 +635,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
               <span style={{ fontSize: 11, fontWeight: 700, color: "var(--orange)" }}>Goal {i + 1}</span>
               <button onClick={() => removeGoal(sectionId, i)} className="cbtn" style={{ color: "var(--orange)" }}><I.Trash/></button>
             </div>
-            <input value={g.goal} onChange={e => updateGoal(sectionId, i, e.target.value)} placeholder="What's the goal?…" className="gin" style={{ height: 32, fontSize: 12 }}/>
+            <NoteInput value={g.goal} onChange={v => updateGoal(sectionId, i, v)} placeholder="What's the goal?…" rows={0} className="gin" style={{ height: 32, fontSize: 12 }}/>
           </div>
         ))}
         <button onClick={() => addGoal(sectionId)} style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "1px dashed rgba(232,164,74,0.2)", borderRadius: 6, padding: "5px 10px", fontSize: 11, fontWeight: 600, color: "var(--orange)", cursor: "pointer", marginTop: 6, fontFamily: "var(--font)", width: "100%", justifyContent: "center", transition: "all .2s" }}
@@ -574,6 +654,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     const dd = openDropdown[s.id];
     const hasPains = ex.pains?.length > 0;
     const hasGoals = ex.goals?.length > 0;
+    const dropdownVal = notes[s.id + "_dropdown"] || "";
 
     return (
       <div className={`row ${isOn ? "on" : ""}`}>
@@ -583,8 +664,12 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
           <button onClick={() => toggle(s.id)} className={`cb ${isOn ? "on" : ""}`}>{isOn && <I.Check/>}</button>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: isOn ? "var(--accent)" : "var(--text)", transition: "color .2s", letterSpacing: "-.01em" }}>{s.label}</span>
+            {/* Show selected dropdown value as inline badge */}
+            {s.dropdown && dropdownVal && !readOnly && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "rgba(0,194,168,0.1)", padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(0,194,168,0.15)" }}>{dropdownVal}</span>
+            )}
             {!readOnly && !s.noPain && (
               <button className="tag-btn" onClick={() => toggleDD(s.id, "pain")}
                 style={{ color: dd === "pain" || hasPains ? "var(--red)" : "var(--text3)", borderColor: dd === "pain" || hasPains ? "rgba(255,68,53,0.3)" : "rgba(255,255,255,0.08)", background: dd === "pain" ? "rgba(232,112,106,0.06)" : "transparent" }}>
@@ -598,13 +683,41 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
               </button>
             )}
           </div>
-          {readOnly ? (
-            <div style={{ fontSize: 13, color: "var(--text2)", whiteSpace: "pre-wrap" }}>{noteVal}</div>
-          ) : s.noNotes ? (
-            <input value={noteVal} onChange={e => setNote(s.id, e.target.value)} placeholder={s.placeholder} className="gin" style={{ height: 34, resize: "none" }}/>
-          ) : (
-            <textarea value={noteVal} onChange={e => setNote(s.id, e.target.value)} placeholder={s.placeholder} rows={s.multiline ? 3 : 1} className="gin" style={{ minHeight: s.multiline ? 72 : 34 }}/>
+
+          {/* BDR Dropdown selector */}
+          {s.dropdown && !readOnly && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: s.noNotes ? 0 : 8 }}>
+              {s.options.map(opt => (
+                <button key={opt} onClick={() => { setNote(s.id + "_dropdown", dropdownVal === opt ? "" : opt); if (!checked[s.id]) toggle(s.id); }}
+                  style={{
+                    padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                    fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s",
+                    border: dropdownVal === opt ? "1px solid var(--accent)" : "1px solid var(--glass-border)",
+                    background: dropdownVal === opt ? "rgba(0,194,168,0.1)" : "var(--glass)",
+                    color: dropdownVal === opt ? "var(--accent)" : "var(--text2)",
+                    boxShadow: dropdownVal === opt ? "0 0 8px var(--accent-glow)" : "none",
+                  }}
+                >{opt}</button>
+              ))}
+            </div>
           )}
+          {s.dropdown && readOnly && (
+            <div style={{ marginBottom: 4 }}>
+              <span style={{
+                display: "inline-block", padding: "5px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600,
+                background: "rgba(0,194,168,0.1)", color: "var(--accent)", border: "1px solid rgba(0,194,168,0.2)",
+              }}>{(rNotes?.[s.id + "_dropdown"]) || "Not selected"}</span>
+            </div>
+          )}
+
+          {/* Notes input */}
+          {readOnly && !s.noNotes && (
+            <div style={{ fontSize: 13, color: "var(--text2)", whiteSpace: "pre-wrap" }}>{noteVal !== "—" ? noteVal : ""}{noteVal === "—" && !s.dropdown ? "—" : ""}</div>
+          )}
+          {!readOnly && !s.noNotes && (
+            <NoteInput value={noteVal} onChange={v => setNote(s.id, v)} placeholder={s.placeholder} rows={s.multiline ? 3 : 1} className="gin" style={{ minHeight: s.multiline ? 72 : 34 }}/>
+          )}
+
           {/* Inline pain dropdown */}
           {!readOnly && dd === "pain" && <PainCards sectionId={s.id}/>}
           {/* Inline goal dropdown */}
@@ -629,17 +742,103 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     );
   };
 
+  // Announcement state
+  const [announceOpen, setAnnounceOpen] = useState(false);
+
   // ═══════════════════════════════════
   // SELECT SCREEN
   // ═══════════════════════════════════
   if (screen === "select") return wrap(
     <div className="container">
+
+      {/* Upcoming Features — small pill, top left */}
+      <div style={{ marginBottom: 20, animation: "fadeUp 0.3s ease" }}>
+        {!announceOpen ? (
+          <button onClick={() => setAnnounceOpen(true)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "rgba(0,194,168,0.06)", border: "1px solid rgba(0,194,168,0.12)",
+              borderRadius: 9, padding: "5px 12px",
+              fontSize: 11, fontWeight: 600, fontFamily: "var(--font)",
+              color: "var(--accent)", cursor: "pointer", transition: "all .3s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,194,168,0.1)"; e.currentTarget.style.borderColor = "rgba(0,194,168,0.25)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,194,168,0.06)"; e.currentTarget.style.borderColor = "rgba(0,194,168,0.12)"; }}
+          >
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M13 2v10l-6-2.5V4.5L13 2zM7 4.5H4a2 2 0 00-2 2v1a2 2 0 002 2h3M7 9.5l1 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Upcoming Features
+          </button>
+        ) : (
+          <div style={{
+            background: "var(--glass)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid var(--glass-border)", borderRadius: 14,
+            padding: "14px 16px", maxWidth: 340,
+            animation: "fadeUp .3s cubic-bezier(.175,.885,.32,1.275)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Upcoming Features</span>
+              <button onClick={() => setAnnounceOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 12, lineHeight: 1, padding: 2 }}
+              >✕</button>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>AI-Enhanced Notes</div>
+            <p style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.5, marginBottom: 10 }}>
+              Auto-correct spelling, expand abbreviations, and structure your notes for Salesforce. Powered by Claude.
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", background: "rgba(0,194,168,0.08)", padding: "2px 7px", borderRadius: 5, letterSpacing: "0.02em" }}>Q2 2026</span>
+              <span style={{ fontSize: 10, color: "var(--text3)" }}>Mon 27 Apr · 8 AM BST</span>
+            </div>
+          </div>
+        )}
+      </div>
       <div style={{ textAlign: "center", marginBottom: 32, animation: "fadeUp 0.4s ease" }}>
         <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 48, height: 48, borderRadius: 12, background: "var(--logo-bg)", marginBottom: 16, boxShadow: "0 0 24px rgba(255,255,255,0.06)" }}>
           <svg width="30" height="30" viewBox="0 0 28 28" fill="none"><rect x="3" y="3" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="11" y="3" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="19" y="3" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="3" y="11" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="11" y="11" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="19" y="11" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="3" y="19" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="11" y="19" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="19" y="19" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/></svg>
         </div>
         <h1 className="hero-title" style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.04em", marginBottom: 6 }}>Discovery Bank</h1>
-        <p className="hero-sub" style={{ fontSize: 14, color: "var(--text2)" }}>Select your vertical to start</p>
+        <p className="hero-sub" style={{ fontSize: 14, color: "var(--text2)", marginBottom: 0 }}>Choose your role & vertical</p>
+      </div>
+
+      {/* Role Toggle — Sliding Pill */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 24, animation: "fadeUp 0.45s ease" }}>
+        <div className="role-toggle-track" style={{
+          display: "inline-grid", gridTemplateColumns: "1fr 1fr", position: "relative",
+          background: "var(--glass)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+          border: "1px solid var(--glass-border)", borderRadius: 14, padding: 4,
+        }}>
+          {/* Sliding background pill */}
+          <div style={{
+            position: "absolute", top: 4, bottom: 4,
+            width: "calc(50% - 2px)",
+            left: role === "ae" ? 4 : "calc(50% - 2px)",
+            background: "var(--accent)",
+            borderRadius: 11,
+            transition: "left .4s cubic-bezier(.175,.885,.32,1.275)",
+            boxShadow: "0 2px 12px var(--accent-glow)",
+            zIndex: 0,
+          }}/>
+          {[
+            { key: "ae", full: "Account Executive", short: "AE" },
+            { key: "bdr", full: "BDR", short: "BDR" },
+          ].map(r => (
+            <button key={r.key} onClick={() => setRole(r.key)}
+              className="role-toggle-btn"
+              style={{
+                position: "relative", zIndex: 1,
+                padding: "9px 28px", borderRadius: 11, fontSize: 13, fontWeight: 600,
+                fontFamily: "var(--font)", cursor: "pointer", border: "none",
+                background: "transparent", whiteSpace: "nowrap",
+                transition: "color .35s cubic-bezier(.4,0,.2,1)",
+                color: role === r.key ? "var(--btn1-text)" : "var(--text3)",
+                textAlign: "center",
+              }}
+            >
+              <span className="role-label-full">{r.full}</span>
+              <span className="role-label-short">{r.short}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", animation: "fadeUp 0.5s ease" }}>
         {[
@@ -661,17 +860,109 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
       <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 28, flexWrap: "wrap" }}>
         <button onClick={() => { loadIndex(); setScreen("history"); }} className="btn2" style={{}}>
           <I.History/> Saved Discoveries
-          {savedList.length > 0 && <span style={{ background: "var(--accent)", color: "var(--btn1-text)", borderRadius: 8, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>{savedList.length}</span>}
+          {savedList.length > 0 && <span style={{ background: "var(--glass)", color: "var(--text3)", borderRadius: 8, padding: "1px 7px", fontSize: 10, fontWeight: 600, border: "1px solid var(--glass-border)" }}>{savedList.length}</span>}
         </button>
-        {session && (
-          <button onClick={() => db.signOut()} className="btn2" style={{ fontSize: 12, padding: "8px 14px" }}>
-            {session.user?.user_metadata?.avatar_url && (
-              <img src={session.user.user_metadata.avatar_url} alt="" style={{ width: 18, height: 18, borderRadius: "50%" }}/>
-            )}
-            Sign Out
-          </button>
-        )}
       </div>
+
+      {/* Floating Feedback — bottom right, home screen only */}
+      {!feedbackOpen && (
+        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+          <button onClick={() => { setFeedbackOpen(true); setFeedbackStep(0); setFeedbackRating(0); setFeedbackCategory(""); setFeedbackMessage(""); }}
+            style={{
+              width: 48, height: 48, borderRadius: 16,
+              background: "var(--glass)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+              border: "1px solid var(--glass-border)",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--text3)", padding: 0, transition: "all .3s cubic-bezier(.4,0,.2,1)",
+              boxShadow: "0 4px 20px var(--shadow)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 4px 24px var(--accent-glow)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 20px var(--shadow)"; }}
+            title="Share feedback"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1C5 1 1 4.6 1 9c0 2.4 1.2 4.5 3 5.9V19l3.5-2.1c.8.2 1.6.3 2.5.3 5 0 9-3.6 9-8s-4-8-9-8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+          </button>
+          <span className="feedback-label" style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", letterSpacing: "0.02em" }}>Feedback</span>
+        </div>
+      )}
+      {feedbackOpen && screen === "select" && (
+        <div style={{
+          position: "fixed", bottom: 24, right: 24, zIndex: 50,
+          width: 360, maxWidth: "calc(100vw - 48px)",
+          background: "var(--glass)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)",
+          border: "1px solid var(--glass-border)", borderRadius: 20,
+          boxShadow: "0 8px 40px rgba(0,0,0,0.2), 0 0 0 1px var(--glass-border)",
+          overflow: "hidden", animation: "fadeUp .35s cubic-bezier(.175,.885,.32,1.275)",
+        }}>
+          <div style={{ height: 3, background: "var(--glass-border)" }}>
+            <div style={{ height: "100%", background: "var(--accent)", width: feedbackStep === 0 ? "25%" : feedbackStep === 1 ? "50%" : feedbackStep === 2 ? "75%" : "100%", borderRadius: 3, transition: "width .5s cubic-bezier(.175,.885,.32,1.275)" }}/>
+          </div>
+          <div style={{ padding: "20px 20px 18px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
+                {feedbackStep === 0 ? "How's Discovery Bank?" : feedbackStep === 1 ? "What's this about?" : feedbackStep === 2 ? "Tell us more" : "Thank you!"}
+              </span>
+              {feedbackStep < 3 && (
+                <button onClick={() => setFeedbackOpen(false)}
+                  style={{ background: "var(--glass)", border: "1px solid var(--glass-border)", borderRadius: 8, width: 28, height: 28, cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
+                >✕</button>
+              )}
+            </div>
+            {feedbackStep === 0 && (
+              <div style={{ animation: "fadeUp .3s ease" }}>
+                <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>Tap to rate your experience</p>
+                <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14 }}>
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} onClick={() => { setFeedbackRating(n); setTimeout(() => setFeedbackStep(1), 300); }}
+                      style={{ width: 44, height: 44, borderRadius: 13, fontSize: 20, border: feedbackRating === n ? "2px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackRating === n ? "rgba(0,194,168,0.1)" : "transparent", cursor: "pointer", transition: "all .25s cubic-bezier(.175,.885,.32,1.275)", transform: feedbackRating === n ? "scale(1.15)" : "scale(1)", boxShadow: feedbackRating === n ? "0 0 12px var(--accent-glow)" : "none" }}
+                      onMouseEnter={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1.08)"; }}
+                      onMouseLeave={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1)"; }}
+                    >{["😟","😕","😐","😊","🤩"][n-1]}</button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text3)", padding: "0 6px" }}><span>Needs work</span><span>Love it</span></div>
+              </div>
+            )}
+            {feedbackStep === 1 && (
+              <div style={{ animation: "fadeUp .3s ease" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+                  {["Bug / Issue", "Feature Request", "Design", "Templates", "General"].map(cat => (
+                    <button key={cat} onClick={() => { setFeedbackCategory(cat); setTimeout(() => setFeedbackStep(2), 250); }}
+                      style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s", border: feedbackCategory === cat ? "1px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackCategory === cat ? "rgba(0,194,168,0.1)" : "transparent", color: feedbackCategory === cat ? "var(--accent)" : "var(--text2)" }}
+                    >{cat}</button>
+                  ))}
+                </div>
+                <button onClick={() => setFeedbackStep(0)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 11, fontFamily: "var(--font)" }}>← Back</button>
+              </div>
+            )}
+            {feedbackStep === 2 && (
+              <div style={{ animation: "fadeUp .3s ease" }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                  <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(0,194,168,0.1)", color: "var(--accent)" }}>{["😟","😕","😐","😊","🤩"][feedbackRating-1]} {feedbackRating}/5</span>
+                  <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "var(--glass)", color: "var(--text2)", border: "1px solid var(--glass-border)" }}>{feedbackCategory}</span>
+                </div>
+                <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} placeholder="What's on your mind?…" className="gin" rows={3} style={{ minHeight: 70, marginBottom: 10, fontSize: 12 }}/>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <button onClick={() => setFeedbackStep(1)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 11, fontFamily: "var(--font)" }}>← Back</button>
+                  <button onClick={async () => { setFeedbackSending(true); const subject = encodeURIComponent(`Discovery Bank Feedback — ${feedbackCategory} (${feedbackRating}/5)`); const body = encodeURIComponent(`Rating: ${feedbackRating}/5 ${["😟","😕","😐","😊","🤩"][feedbackRating-1]}\nCategory: ${feedbackCategory}\n\nFeedback:\n${feedbackMessage}\n\n---\nSent from Discovery Bank`); window.open(`mailto:ddias@squareup.com?subject=${subject}&body=${body}`, "_blank"); setTimeout(() => { setFeedbackSending(false); setFeedbackStep(3); }, 500); }} disabled={feedbackSending}
+                    className="btn1" style={{ padding: "8px 18px", fontSize: 12, opacity: feedbackSending ? 0.7 : 1 }}>{feedbackSending ? "Sending…" : "Send"}</button>
+                </div>
+              </div>
+            )}
+            {feedbackStep === 3 && (
+              <div style={{ textAlign: "center", padding: "8px 0", animation: "fadeUp .3s ease" }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>✨</div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Feedback sent!</p>
+                <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 12, lineHeight: 1.6 }}>Discovery Bank is a passion project built outside of work hours, so popular requests get shipped twice a month. You'll be notified by email when updates land.</p>
+                <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14, fontStyle: "italic" }}>— Damani</p>
+                <button onClick={() => { setFeedbackOpen(false); setFeedbackStep(0); }} className="btn2" style={{ margin: "0 auto", padding: "7px 16px", fontSize: 11 }}>Close</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -682,7 +973,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     <div className="container">
       <button onClick={() => setScreen(vertical ? "tile" : "select")} className="btn2" style={{ marginBottom: 20, padding: "8px 14px", fontSize: 12 }}><I.Back/> Back</button>
       <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 16 }}>Saved Discoveries</h2>
-      <div className="glass" style={{ padding: "10px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="glass" style={{ padding: "11px 18px", marginBottom: 10, display: "flex", alignItems: "center", gap: 11 }}>
         <I.Search/><input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search by name, SF URL, or date…" className="gin" style={{ border: "none", background: "transparent", padding: "6px 0" }}/>
       </div>
       {/* Date filter */}
@@ -803,6 +1094,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 <div style={{ fontSize: 12, color: "var(--text3)", display: "flex", alignItems: "center", gap: 8 }}>
                   {new Date(d.savedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                   <span className="badge" style={{ background: "var(--logo-bg)", color: "var(--text2)" }}>{d.vertical === "restaurant" ? "Restaurant" : "Retail"}</span>
+                  {d.role && <span className="badge" style={{ background: d.role === "bdr" ? "rgba(0,194,168,0.08)" : "var(--logo-bg)", color: d.role === "bdr" ? "var(--accent)" : "var(--text2)" }}>{d.role === "bdr" ? "BDR" : "AE"}</span>}
                   {d.recordType && <span className="badge" style={{ background: d.recordType === "Lead" ? "rgba(251,191,36,0.15)" : "rgba(0,214,50,0.12)", color: d.recordType === "Lead" ? "var(--amber)" : "var(--accent)" }}>{d.recordType}</span>}
                 </div>
               </div>
@@ -829,8 +1121,8 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
   // ═══════════════════════════════════
   if (screen === "detail" && detailRecord) {
     const r = detailRecord;
-    const dph = getPhases(r.vertical);
-    const dt = getAllSections(r.vertical).length;
+    const dph = getPhases(r.vertical, r.role || "ae");
+    const dt = getAllSections(r.vertical, r.role || "ae").length;
     const dd = Object.values(r.checked).filter(Boolean).length;
     const dp = Math.round(dd / dt * 100);
     return wrap(
@@ -886,13 +1178,13 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
           </button>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.2 }}>{vertical === "restaurant" ? "Restaurant" : "Retail" } Discovery Bank</h1>
-            <p style={{ fontSize: 12, color: "var(--text3)", letterSpacing: "0.04em", fontWeight: 500 }}>BLOCK · SQUARE · AE</p>
+            <p style={{ fontSize: 12, color: "var(--text3)", letterSpacing: "0.04em", fontWeight: 500 }}>{role === "bdr" ? "BDR" : "AE"} · BLOCK · SQUARE</p>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button onClick={() => { loadIndex(); setScreen("history"); }} className="btn2" style={{ padding: "7px 12px", fontSize: 12 }}>
             <I.History/> History
-            {savedList.length > 0 && <span style={{ background: "var(--accent)", color: "#fff", borderRadius: 8, padding: "1px 7px", fontSize: 10, fontWeight: 700 }}>{savedList.length}</span>}
+            {savedList.length > 0 && <span style={{ background: "var(--glass)", color: "var(--text3)", borderRadius: 8, padding: "1px 7px", fontSize: 10, fontWeight: 600, border: "1px solid var(--glass-border)" }}>{savedList.length}</span>}
           </button>
           <ProgressRing pct={pct}/>
         </div>
@@ -902,7 +1194,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", animation: "fadeUp 0.5s ease" }}>
         <div className="glass" style={{ flex: 1, minWidth: 180, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, borderColor: saveStatus === "needsName" ? "var(--red)" : undefined }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", whiteSpace: "nowrap" }}>Biz</span>
-          <input value={notes.businessName || ""} onChange={e => setNote("businessName", e.target.value)} placeholder="Business name…" style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "var(--font)", color: "var(--text)", background: "transparent" }}/>
+          <NoteInput value={notes.businessName || ""} onChange={v => setNote("businessName", v)} placeholder="Business name…" rows={0} className="" style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "var(--font)", color: "var(--text)", background: "transparent", height: 34, padding: 0 }}/>
         </div>
         <div className="glass" style={{ minWidth: 130, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em", whiteSpace: "nowrap" }}>Date</span>
@@ -918,7 +1210,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 style={{ transition: "fill .3s" }}/>
             </svg>
           </div>
-          <input value={notes.sfUrl || ""} onChange={e => setNote("sfUrl", e.target.value)} placeholder="Salesforce URL…" style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "var(--font)", color: "var(--text)", background: "transparent" }}/>
+          <NoteInput value={notes.sfUrl || ""} onChange={v => setNote("sfUrl", v)} placeholder="Salesforce URL…" rows={0} className="" style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "var(--font)", color: "var(--text)", background: "transparent", height: 34, padding: 0 }}/>
           {recType(notes.sfUrl) && <span className="badge" style={{ background: recType(notes.sfUrl) === "Lead" ? "rgba(251,191,36,0.15)" : "rgba(0,214,50,0.12)", color: recType(notes.sfUrl) === "Lead" ? "var(--amber)" : "var(--accent)" }}>{recType(notes.sfUrl) === "Lead" ? "Lead" : "Opp"}</span>}
         </div>
       </div>
@@ -976,6 +1268,102 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
         >
           <I.Home/> New Discovery
         </button>
+      </div>
+
+      {/* Feedback — at bottom of template */}
+      <div style={{ marginTop: 32, paddingBottom: 8, textAlign: "center", animation: "fadeUp 1.2s ease" }}>
+        {!feedbackOpen ? (
+          <button onClick={() => { setFeedbackOpen(true); setFeedbackStep(0); setFeedbackRating(0); setFeedbackCategory(""); setFeedbackMessage(""); }}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 7,
+              background: "none", border: "1px solid var(--glass-border)",
+              borderRadius: 10, padding: "8px 18px",
+              fontSize: 11, fontWeight: 600, fontFamily: "var(--font)",
+              color: "var(--text3)", cursor: "pointer", transition: "all .3s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "rgba(0,194,168,0.25)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--glass-border)"; }}
+          >
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M10 1C5 1 1 4.6 1 9c0 2.4 1.2 4.5 3 5.9V19l3.5-2.1c.8.2 1.6.3 2.5.3 5 0 9-3.6 9-8s-4-8-9-8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+            Share Feedback
+          </button>
+        ) : (
+          <div style={{
+            maxWidth: 400, margin: "0 auto", textAlign: "left",
+            background: "var(--glass)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)",
+            border: "1px solid var(--glass-border)", borderRadius: 20,
+            boxShadow: "0 4px 24px var(--shadow)",
+            overflow: "hidden", animation: "fadeUp .35s cubic-bezier(.175,.885,.32,1.275)",
+          }}>
+            <div style={{ height: 3, background: "var(--glass-border)" }}>
+              <div style={{ height: "100%", background: "var(--accent)", width: feedbackStep === 0 ? "25%" : feedbackStep === 1 ? "50%" : feedbackStep === 2 ? "75%" : "100%", borderRadius: 3, transition: "width .5s cubic-bezier(.175,.885,.32,1.275)" }}/>
+            </div>
+            <div style={{ padding: "20px 20px 18px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>
+                  {feedbackStep === 0 ? "How's Discovery Bank?" : feedbackStep === 1 ? "What's this about?" : feedbackStep === 2 ? "Tell us more" : "Thank you!"}
+                </span>
+                {feedbackStep < 3 && (
+                  <button onClick={() => setFeedbackOpen(false)}
+                    style={{ background: "var(--glass)", border: "1px solid var(--glass-border)", borderRadius: 8, width: 28, height: 28, cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, transition: "all .2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
+                  >✕</button>
+                )}
+              </div>
+              {feedbackStep === 0 && (
+                <div style={{ animation: "fadeUp .3s ease" }}>
+                  <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>Tap to rate your experience</p>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14 }}>
+                    {[1,2,3,4,5].map(n => (
+                      <button key={n} onClick={() => { setFeedbackRating(n); setTimeout(() => setFeedbackStep(1), 300); }}
+                        style={{ width: 48, height: 48, borderRadius: 14, fontSize: 22, border: feedbackRating === n ? "2px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackRating === n ? "rgba(0,194,168,0.1)" : "transparent", cursor: "pointer", transition: "all .25s cubic-bezier(.175,.885,.32,1.275)", transform: feedbackRating === n ? "scale(1.15)" : "scale(1)", boxShadow: feedbackRating === n ? "0 0 12px var(--accent-glow)" : "none" }}
+                        onMouseEnter={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1.08)"; }}
+                        onMouseLeave={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1)"; }}
+                      >{["😟","😕","😐","😊","🤩"][n-1]}</button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text3)", padding: "0 8px" }}><span>Needs work</span><span>Love it</span></div>
+                </div>
+              )}
+              {feedbackStep === 1 && (
+                <div style={{ animation: "fadeUp .3s ease" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+                    {["Bug / Issue", "Feature Request", "Design", "Templates", "General"].map(cat => (
+                      <button key={cat} onClick={() => { setFeedbackCategory(cat); setTimeout(() => setFeedbackStep(2), 250); }}
+                        style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s", border: feedbackCategory === cat ? "1px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackCategory === cat ? "rgba(0,194,168,0.1)" : "transparent", color: feedbackCategory === cat ? "var(--accent)" : "var(--text2)" }}
+                      >{cat}</button>
+                    ))}
+                  </div>
+                  <button onClick={() => setFeedbackStep(0)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 11, fontFamily: "var(--font)" }}>← Back</button>
+                </div>
+              )}
+              {feedbackStep === 2 && (
+                <div style={{ animation: "fadeUp .3s ease" }}>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                    <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(0,194,168,0.1)", color: "var(--accent)" }}>{["😟","😕","😐","😊","🤩"][feedbackRating-1]} {feedbackRating}/5</span>
+                    <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "var(--glass)", color: "var(--text2)", border: "1px solid var(--glass-border)" }}>{feedbackCategory}</span>
+                  </div>
+                  <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} placeholder="What's on your mind? Be as brief or detailed as you like…" className="gin" rows={3} style={{ minHeight: 80, marginBottom: 12, fontSize: 13 }}/>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <button onClick={() => setFeedbackStep(1)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 11, fontFamily: "var(--font)" }}>← Back</button>
+                    <button onClick={async () => { setFeedbackSending(true); const subject = encodeURIComponent(`Discovery Bank Feedback — ${feedbackCategory} (${feedbackRating}/5)`); const body = encodeURIComponent(`Rating: ${feedbackRating}/5 ${["😟","😕","😐","😊","🤩"][feedbackRating-1]}\nCategory: ${feedbackCategory}\n\nFeedback:\n${feedbackMessage}\n\n---\nSent from Discovery Bank`); window.open(`mailto:ddias@squareup.com?subject=${subject}&body=${body}`, "_blank"); setTimeout(() => { setFeedbackSending(false); setFeedbackStep(3); }, 500); }} disabled={feedbackSending}
+                      className="btn1" style={{ padding: "9px 20px", fontSize: 13, opacity: feedbackSending ? 0.7 : 1 }}>{feedbackSending ? "Sending…" : "Send Feedback"}</button>
+                  </div>
+                </div>
+              )}
+              {feedbackStep === 3 && (
+                <div style={{ textAlign: "center", padding: "10px 0", animation: "fadeUp .3s ease" }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>✨</div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>Feedback sent!</p>
+                  <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14, lineHeight: 1.6 }}>Discovery Bank is a passion project built outside of work hours, so popular requests get shipped twice a month. You'll be notified by email when updates land.</p>
+                  <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 16, fontStyle: "italic" }}>— Damani</p>
+                  <button onClick={() => { setFeedbackOpen(false); setFeedbackStep(0); }} className="btn2" style={{ margin: "0 auto", padding: "8px 18px", fontSize: 12 }}>Close</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
