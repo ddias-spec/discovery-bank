@@ -6,16 +6,21 @@ import { supabase } from "./supabaseClient";
 const NoteInput = memo(({ value, onChange, placeholder, rows, className, style }) => {
   const ref = useRef(null);
   const [local, setLocal] = useState(value || "");
+  const localRef = useRef(local);
+  localRef.current = local;
   const syncing = useRef(false);
-  // Accept parent value only if we're not the source of the change
   useEffect(() => {
     if (!syncing.current) setLocal(value || "");
     syncing.current = false;
   }, [value]);
   const handleBlur = () => {
     syncing.current = true;
-    onChange(local);
+    onChange(localRef.current);
   };
+  // Expose current value so parent can grab it without waiting for blur
+  useEffect(() => {
+    if (ref.current) ref.current._getLocal = () => localRef.current;
+  });
   const props = { ref, value: local, onChange: e => setLocal(e.target.value), onBlur: handleBlur, placeholder, className, style };
   return rows === 0 || style?.height ? <input {...props}/> : <textarea {...props} rows={rows || 1}/>;
 });
@@ -364,7 +369,13 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
   }, []);
   useEffect(() => { loadIndex(); }, [loadIndex]);
 
-  const toggle = (id) => setChecked(p => ({ ...p, [id]: !p[id] }));
+  const toggle = (id) => {
+    // Blur any focused input to sync its value before toggling
+    if (document.activeElement && document.activeElement.tagName !== "BUTTON") {
+      document.activeElement.blur();
+    }
+    setTimeout(() => setChecked(p => ({ ...p, [id]: !p[id] })), 10);
+  };
   const setNote = (id, v) => setNotes(p => ({ ...p, [id]: v }));
   const togglePhase = (k) => setOpenPhases(p => ({ ...p, [k]: !p[k] }));
 
@@ -655,7 +666,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
         {readOnly ? (
           <div className={`cb ${isOn ? "on" : ""}`} style={{ cursor: "default" }}>{isOn && <I.Check/>}</div>
         ) : (
-          <button onClick={() => toggle(s.id)} className={`cb ${isOn ? "on" : ""}`}>{isOn && <I.Check/>}</button>
+          <button onMouseDown={e => { e.preventDefault(); toggle(s.id); }} className={`cb ${isOn ? "on" : ""}`}>{isOn && <I.Check/>}</button>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
