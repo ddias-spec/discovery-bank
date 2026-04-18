@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
+import { db } from "./db";
+import { supabase } from "./supabaseClient";
 
 // Isolated text input — local state for smooth typing, debounced sync to parent
 const NoteInput = memo(({ value, onChange, placeholder, rows, className, style }) => {
@@ -138,7 +140,7 @@ const getAllSections = (v, role) => getPhases(v, role).flatMap(p => p.sections);
 // ═══════════════════════════════════════════
 // STYLES
 // ═══════════════════════════════════════════
-const CSS = `
+export const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
   :root,[data-theme="dark"]{
     --bg:#13131a;--glass:rgba(255,255,255,0.035);--glass-border:rgba(255,255,255,0.07);
@@ -296,7 +298,7 @@ const CSS = `
 // ═══════════════════════════════════════════
 // ICONS
 // ═══════════════════════════════════════════
-const I = {
+export const I = {
   Check: () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Copy: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10 4V2.5A1.5 1.5 0 008.5 1H2.5A1.5 1.5 0 001 2.5v6A1.5 1.5 0 002.5 10H4" stroke="currentColor" strokeWidth="1.3"/></svg>,
   Done: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="var(--accent)"/><path d="M4 7L6 9L10 5" stroke="#13131a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
@@ -334,8 +336,10 @@ const ProgressRing = ({ pct }) => {
 // ═══════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════
-export default function DiscoveryTile() {
-  const [theme, setTheme] = useState("dark");
+export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: toggleThemeProp }) {
+  const [theme, setTheme] = useState(themeProp || "dark");
+  useEffect(() => { if (themeProp) setTheme(themeProp); }, [themeProp]);
+  const toggleTheme = toggleThemeProp || (() => setTheme(t => t === "dark" ? "light" : "dark"));
   const [screen, setScreen] = useState("select");
   const [vertical, setVertical] = useState(null);
   const [role, setRole] = useState("ae"); // "ae" | "bdr"
@@ -363,7 +367,7 @@ export default function DiscoveryTile() {
   const [feedbackSending, setFeedbackSending] = useState(false);
 
   const loadIndex = useCallback(async () => {
-    try { const r = await window.storage.get("discovery-index"); if (r) setSavedList(JSON.parse(r.value)); } catch { setSavedList([]); }
+    try { const data = await db.loadDiscoveries(); setSavedList(data.map(d => ({ id: d.discovery_id, vertical: d.vertical, role: d.role, businessName: d.business_name, sfUrl: d.sf_url, recordType: d.record_type, completion: d.completion, savedAt: d.saved_at }))); } catch { setSavedList([]); }
   }, []);
   useEffect(() => { loadIndex(); }, [loadIndex]);
 
@@ -488,19 +492,17 @@ export default function DiscoveryTile() {
     const id = "disc_" + Date.now();
     const rec = { id, vertical, role, businessName: notes.businessName, sfUrl: notes.sfUrl || "", recordType: recType(notes.sfUrl), notes: { ...notes }, checked: { ...checked }, sectionExtras: JSON.parse(JSON.stringify(sectionExtras)), completion: pct, savedAt: new Date().toISOString() };
     try {
-      await window.storage.set(`discovery:${id}`, JSON.stringify(rec));
+      await db.saveDiscovery(rec);
       const nl = [{ id, vertical: rec.vertical, role: rec.role, businessName: rec.businessName, sfUrl: rec.sfUrl, recordType: rec.recordType, completion: rec.completion, savedAt: rec.savedAt }, ...savedList];
-      await window.storage.set("discovery-index", JSON.stringify(nl));
       setSavedList(nl); setSaveStatus("saved");
       setTimeout(() => { setChecked({}); setNotes({}); setSectionExtras({}); setOpenDropdown({}); setOpenPhases({}); setSaveStatus(null); setScreen("select"); setVertical(null); }, 2000);
     } catch { setSaveStatus("error"); setTimeout(() => setSaveStatus(null), 2500); }
   };
 
   const loadDiscovery = async (id) => {
-    try { const r = await window.storage.get(`discovery:${id}`); if (r) { setDetailRecord(JSON.parse(r.value)); setScreen("detail"); } } catch {}
+    try { const data = await db.loadDiscovery(id); if (data) { setDetailRecord({ id: data.discovery_id, vertical: data.vertical, role: data.role, businessName: data.business_name, sfUrl: data.sf_url, recordType: data.record_type, notes: data.notes, checked: data.checked, sectionExtras: data.section_extras, completion: data.completion, savedAt: data.saved_at }); setScreen("detail"); } } catch {}
   };
   const deleteDiscovery = async (id) => {
-    try { await window.storage.delete(`discovery:${id}`); const nl = savedList.filter(d => d.id !== id); await window.storage.set("discovery-index", JSON.stringify(nl)); setSavedList(nl); setDeleteConfirm(null); if (detailRecord?.id === id) setScreen("history"); } catch {}
   };
 
   const filtered = savedList.filter(d => {
@@ -529,7 +531,6 @@ export default function DiscoveryTile() {
     return true;
   });
 
-  const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
 
   const wrap = (ch) => (
     <div data-theme={theme} className="wrap-outer" style={{ fontFamily: "var(--font)", background: "var(--bg)", color: "var(--text)", position: "relative", overflow: "hidden" }}>
@@ -862,6 +863,14 @@ export default function DiscoveryTile() {
           <I.History/> Saved Discoveries
           {savedList.length > 0 && <span style={{ background: "var(--glass)", color: "var(--text3)", borderRadius: 8, padding: "1px 7px", fontSize: 10, fontWeight: 600, border: "1px solid var(--glass-border)" }}>{savedList.length}</span>}
         </button>
+        {session && (
+          <button onClick={() => db.signOut()} className="btn2" style={{ fontSize: 12, padding: "8px 14px" }}>
+            {session.user?.user_metadata?.avatar_url && (
+              <img src={session.user.user_metadata.avatar_url} alt="" style={{ width: 18, height: 18, borderRadius: "50%" }}/>
+            )}
+            Sign Out
+          </button>
+        )}
       </div>
 
       {/* Floating Feedback — bottom right, home screen only */}
