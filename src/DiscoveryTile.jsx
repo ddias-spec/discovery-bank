@@ -2,29 +2,22 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { db } from "./db";
 import { supabase } from "./supabaseClient";
 
-// Isolated text input — local state for smooth typing, debounced sync to parent
+// Isolated text input — fully local while typing, syncs to parent ONLY on blur
 const NoteInput = memo(({ value, onChange, placeholder, rows, className, style }) => {
+  const ref = useRef(null);
   const [local, setLocal] = useState(value || "");
-  const timer = useRef(null);
-  const isMounted = useRef(true);
-  const lastSynced = useRef(value || "");
-  // Only accept parent value if it changed externally (not from our own onChange)
+  const syncing = useRef(false);
+  // Accept parent value only if we're not the source of the change
   useEffect(() => {
-    if (value !== lastSynced.current) { setLocal(value || ""); lastSynced.current = value || ""; }
+    if (!syncing.current) setLocal(value || "");
+    syncing.current = false;
   }, [value]);
-  useEffect(() => () => { isMounted.current = false; clearTimeout(timer.current); }, []);
-  const handleChange = (e) => {
-    const v = e.target.value;
-    setLocal(v);
-    lastSynced.current = v;
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => { if (isMounted.current) onChange(v); }, 300);
+  const handleBlur = () => {
+    syncing.current = true;
+    onChange(local);
   };
-  const handleBlur = () => { clearTimeout(timer.current); lastSynced.current = local; onChange(local); };
-  if (rows === 0 || style?.height) {
-    return <input value={local} onChange={handleChange} onBlur={handleBlur} placeholder={placeholder} className={className} style={style}/>;
-  }
-  return <textarea value={local} onChange={handleChange} onBlur={handleBlur} placeholder={placeholder} rows={rows || 1} className={className} style={style}/>;
+  const props = { ref, value: local, onChange: e => setLocal(e.target.value), onBlur: handleBlur, placeholder, className, style };
+  return rows === 0 || style?.height ? <input {...props}/> : <textarea {...props} rows={rows || 1}/>;
 });
 
 // ═══════════════════════════════════════════
