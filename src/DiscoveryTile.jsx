@@ -141,7 +141,7 @@ const getAllSections = (v, role) => getPhases(v, role).flatMap(p => p.sections);
 export const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
   :root,[data-theme="dark"]{
-    --bg:#13131a;--glass:rgba(255,255,255,0.035);--glass-border:rgba(255,255,255,0.07);
+    --bg:#13131a;--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
     --glass-hover:rgba(255,255,255,0.055);--glass-active:rgba(0,194,168,0.05);
     --text:#E8E4DF;--text2:rgba(232,228,223,0.55);--text3:rgba(232,228,223,0.3);
     --accent:#00C2A8;--accent2:#00a892;--accent-glow:rgba(0,194,168,0.15);
@@ -158,7 +158,7 @@ export const CSS = `
     --radius:16px;--radius-sm:10px;--font:'Outfit',-apple-system,sans-serif;
   }
   [data-theme="light"]{
-    --bg:#f3f4f6;--glass:rgba(255,255,255,0.55);--glass-border:rgba(0,0,0,0.13);
+    --bg:#f3f4f6;--glass:rgba(255,255,255,0.45);--glass-border:rgba(0,0,0,0.1);
     --glass-hover:rgba(255,255,255,0.75);--glass-active:rgba(0,168,146,0.05);
     --text:#1a1a2e;--text2:rgba(26,26,46,0.55);--text3:rgba(26,26,46,0.3);
     --accent:#00a892;--accent2:#008f7a;--accent-glow:rgba(0,168,146,0.12);
@@ -184,8 +184,8 @@ export const CSS = `
   @keyframes marquee-fade{0%,100%{opacity:0.25}50%{opacity:0.45}}
   @keyframes theme-spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
 
-  .glass{background:var(--glass);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px) saturate(180%);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px var(--shadow);transition:all .4s}
-  .gin{width:100%;background:var(--input-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--input-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;font-family:var(--font);color:var(--text);outline:none;transition:all .3s;line-height:1.5;resize:vertical}
+  .glass{background:var(--glass);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px var(--shadow);transition:all .4s}
+  .gin{width:100%;background:var(--input-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--input-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;font-family:var(--font);color:var(--text);outline:none;transition:all .3s;line-height:1.5;resize:vertical}
   .gin::placeholder{color:var(--text3)}
   .gin:focus{border-color:rgba(0,194,168,0.35);background:var(--input-focus-bg);box-shadow:0 0 0 3px var(--accent-glow)}
   .row{display:flex;align-items:flex-start;gap:12px;padding:11px 20px;border-bottom:1px solid var(--row-border);transition:all .25s}
@@ -749,6 +749,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
 
   // Announcement state
   const [announceOpen, setAnnounceOpen] = useState(false);
+  const [feedbackReportOpen, setFeedbackReportOpen] = useState(false);
 
   // ═══════════════════════════════════
   // SELECT SCREEN
@@ -756,8 +757,8 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
   if (screen === "select") return wrap(
     <div className="container">
 
-      {/* Upcoming Features — small pill, top left */}
-      <div style={{ marginBottom: 20, animation: "fadeUp 0.3s ease" }}>
+      {/* Top pill — Upcoming Features */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20, animation: "fadeUp 0.3s ease" }}>
         {!announceOpen ? (
           <button onClick={() => setAnnounceOpen(true)}
             style={{
@@ -767,41 +768,51 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
               fontSize: 11, fontWeight: 600, fontFamily: "var(--font)",
               color: "var(--accent)", cursor: "pointer", transition: "all .3s",
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,194,168,0.1)"; e.currentTarget.style.borderColor = "rgba(0,194,168,0.25)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,194,168,0.06)"; e.currentTarget.style.borderColor = "rgba(0,194,168,0.12)"; }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,194,168,0.1)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,194,168,0.06)"; }}
           >
             <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M13 2v10l-6-2.5V4.5L13 2zM7 4.5H4a2 2 0 00-2 2v1a2 2 0 002 2h3M7 9.5l1 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Upcoming Features
           </button>
-        ) : (
-          <div style={{
-            background: "var(--glass)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid var(--glass-border)", borderRadius: 14,
-            padding: "14px 16px", maxWidth: 340,
-            animation: "fadeUp .3s cubic-bezier(.175,.885,.32,1.275)",
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Upcoming Features</span>
-              <button onClick={() => setAnnounceOpen(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 12, lineHeight: 1, padding: 2 }}
-              >✕</button>
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>AI-Enhanced Notes</div>
-            <p style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.5, marginBottom: 10 }}>
-              Auto-correct spelling, expand abbreviations, and structure your notes for Salesforce. Powered by Claude.
-            </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", background: "rgba(0,194,168,0.08)", padding: "2px 7px", borderRadius: 5, letterSpacing: "0.02em" }}>Q2 2026</span>
-              <span style={{ fontSize: 10, color: "var(--text3)" }}>Mon 27 Apr · 8 AM BST</span>
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
+
+      {/* Upcoming Features expanded */}
+      {announceOpen && (
+        <div style={{
+          background: "var(--glass)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+          border: "1px solid var(--glass-border)", borderRadius: 14,
+          padding: "14px 16px", maxWidth: 340, marginBottom: 20,
+          animation: "fadeUp .3s cubic-bezier(.175,.885,.32,1.275)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Upcoming Features</span>
+            <button onClick={() => setAnnounceOpen(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 12, lineHeight: 1, padding: 2 }}
+            >✕</button>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>AI-Enhanced Notes</div>
+          <p style={{ fontSize: 11, color: "var(--text2)", lineHeight: 1.5, marginBottom: 10 }}>
+            Auto-correct spelling, expand abbreviations, and structure your notes for Salesforce.
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", background: "rgba(0,194,168,0.08)", padding: "2px 7px", borderRadius: 5, letterSpacing: "0.02em" }}>Q2 2026</span>
+            <span style={{ fontSize: 10, color: "var(--text3)" }}>Mon 27 Apr · 8 AM BST</span>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Report expanded */}
       <div style={{ textAlign: "center", marginBottom: 32, animation: "fadeUp 0.4s ease" }}>
         <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 48, height: 48, borderRadius: 12, background: "var(--logo-bg)", marginBottom: 16, boxShadow: "0 0 24px rgba(255,255,255,0.06)" }}>
           <svg width="30" height="30" viewBox="0 0 28 28" fill="none"><rect x="3" y="3" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="11" y="3" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="19" y="3" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="3" y="11" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="11" y="11" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="19" y="11" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="3" y="19" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="11" y="19" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/><rect x="19" y="19" width="6" height="6" rx="1.5" fill="var(--logo-fill)"/></svg>
         </div>
         <h1 className="hero-title" style={{ fontSize: 26, fontWeight: 800, letterSpacing: "-0.04em", marginBottom: 6 }}>Discovery Bank</h1>
+        {session?.user?.user_metadata?.full_name && (
+          <p style={{ fontSize: 13, color: "var(--accent)", fontWeight: 600, marginBottom: 4 }}>
+            {(() => { const h = new Date().getHours(); const name = session.user.user_metadata.full_name.split(" ")[0]; return h < 12 ? `Good morning, ${name}` : h < 17 ? `Good afternoon, ${name}` : `Good evening, ${name}`; })()}
+          </p>
+        )}
         <p className="hero-sub" style={{ fontSize: 14, color: "var(--text2)", marginBottom: 0 }}>Choose your role & vertical</p>
       </div>
 
@@ -856,7 +867,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,194,168,0.3)"; e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 40px rgba(0,194,168,0.08)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
           >
-            <div className="select-icon" style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(0,194,168,0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>{v.icon}</div>
+            <div className="select-icon" style={{ width: 56, height: 56, borderRadius: 16, background: "var(--glass)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: "1px solid var(--glass-border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--accent)" }}>{v.icon}</div>
             <div className="select-card-title" style={{ fontSize: 18, fontWeight: 700 }}>{v.label}</div>
             <div className="select-card-sub" style={{ fontSize: 12, color: "var(--text3)" }}>{v.sub}</div>
           </button>
@@ -876,6 +887,107 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
           </button>
         )}
       </div>
+
+      {/* Floating Report — bottom left, admin only */}
+      {!feedbackReportOpen && session?.user?.email === "ddias@squareup.com" && (
+        <div className="report-btn-wrap" style={{ position: "fixed", bottom: 24, left: 24, zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+          <button onClick={() => { setFeedbackReportOpen(true); setFeedbackOpen(false); }}
+            style={{
+              width: 48, height: 48, borderRadius: 16,
+              background: "var(--glass)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+              border: "1px solid var(--glass-border)",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--text3)", padding: 0, transition: "all .3s cubic-bezier(.4,0,.2,1)",
+              boxShadow: "0 4px 20px var(--shadow)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--amber)"; e.currentTarget.style.borderColor = "var(--amber)"; e.currentTarget.style.transform = "scale(1.1)"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.transform = "scale(1)"; }}
+            title="Feedback report"
+          >
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M5 10V7M8 10V5M11 10V8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+          </button>
+          <span className="feedback-label" style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", letterSpacing: "0.02em" }}>Report</span>
+        </div>
+      )}
+
+      {/* Feedback Report modal — bottom left */}
+      {feedbackReportOpen && screen === "select" && session?.user?.email === "ddias@squareup.com" && (
+        <div className="feedback-modal" style={{
+          position: "fixed", bottom: 24, left: 24, zIndex: 50,
+          width: 380, maxWidth: "calc(100vw - 48px)",
+          background: "var(--glass)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)",
+          border: "1px solid var(--glass-border)", borderRadius: 20,
+          boxShadow: "0 8px 40px rgba(0,0,0,0.2), 0 0 0 1px var(--glass-border)",
+          overflow: "hidden", animation: "fadeUp .35s cubic-bezier(.175,.885,.32,1.275)",
+        }}>
+          <div style={{ padding: "16px 18px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Feedback Report</span>
+              <button onClick={() => setFeedbackReportOpen(false)}
+                style={{ background: "var(--glass)", border: "1px solid var(--glass-border)", borderRadius: 8, width: 28, height: 28, cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}
+                onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
+              >✕</button>
+            </div>
+            {/* Metric cards */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              {[{ label: "Responses", val: "24", color: "var(--text)" }, { label: "Avg Rating", val: "4.2", color: "var(--accent)" }, { label: "This Week", val: "6", color: "var(--text)" }].map(m => (
+                <div key={m.label} style={{ flex: 1, background: "var(--glass)", border: "1px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
+                  <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.03em" }}>{m.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: m.color }}>{m.val}</div>
+                </div>
+              ))}
+            </div>
+            {/* Category breakdown */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>By Category</div>
+              {[{ label: "Feature Request", count: 14, pct: 58, color: "var(--accent)" }, { label: "Bug / Issue", count: 5, pct: 21, color: "var(--red)" }, { label: "Templates", count: 3, pct: 12, color: "var(--amber)" }, { label: "General", count: 2, pct: 8, color: "var(--text3)" }].map(c => (
+                <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 10, color: "var(--text2)", minWidth: 90 }}>{c.label}</span>
+                  <div style={{ flex: 1, height: 6, background: "var(--glass-border)", borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ width: c.pct + "%", height: "100%", background: c.color, borderRadius: 3 }}/>
+                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "var(--text)", minWidth: 16, textAlign: "right" }}>{c.count}</span>
+                </div>
+              ))}
+            </div>
+            {/* Trending */}
+            <div style={{ background: "rgba(0,194,168,0.04)", border: "1px solid rgba(0,194,168,0.1)", borderRadius: 10, padding: "10px 12px", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 12l4-4 3 3 5-7" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.03em", textTransform: "uppercase" }}>Trending This Week</span>
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>PDF Export for Client Follow-ups</div>
+              <p style={{ fontSize: 10, color: "var(--text2)", margin: 0 }}>4 of 6 submissions this week</p>
+            </div>
+            {/* Recommended */}
+            <div style={{ background: "rgba(232,164,74,0.04)", border: "1px solid rgba(232,164,74,0.1)", borderRadius: 10, padding: "10px 12px", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="var(--amber)" strokeWidth="1.3"/><path d="M8 5v3l2 1.5" stroke="var(--amber)" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                <span style={{ fontSize: 9, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.03em", textTransform: "uppercase" }}>Recommended Next Build</span>
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>PDF Export</div>
+              <p style={{ fontSize: 10, color: "var(--text2)", margin: 0 }}>Most requested feature across all feedback</p>
+            </div>
+            {/* Recent */}
+            <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Recent</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 140, overflowY: "auto" }}>
+              {[{ emoji: "🤩", cat: "Feature Request", msg: "PDF export for client follow-ups", time: "2h ago" }, { emoji: "😊", cat: "Bug / Issue", msg: "Copy to SF misses pain points", time: "Yesterday" }, { emoji: "🤩", cat: "General", msg: "Best tool we have", time: "2 days ago" }].map((f, i) => (
+                <div key={i} style={{ background: "var(--glass)", border: "1px solid var(--glass-border)", borderRadius: 8, padding: "8px 10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                      <span style={{ fontSize: 12 }}>{f.emoji}</span>
+                      <span style={{ fontSize: 8, fontWeight: 600, color: "var(--text2)", background: "var(--glass)", border: "1px solid var(--glass-border)", padding: "1px 5px", borderRadius: 4 }}>{f.cat}</span>
+                    </div>
+                    <span style={{ fontSize: 8, color: "var(--text3)" }}>{f.time}</span>
+                  </div>
+                  <p style={{ fontSize: 10, color: "var(--text)", margin: 0, lineHeight: 1.3 }}>{f.msg}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Feedback — bottom right, home screen only */}
       {!feedbackOpen && (
@@ -925,6 +1037,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             </div>
             {feedbackStep === 0 && (
               <div style={{ animation: "fadeUp .3s ease" }}>
+                <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 12, lineHeight: 1.5 }}>All feedback is anonymous. Thank you for taking the time — it helps us build something better for everyone.</p>
                 <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>Tap to rate your experience</p>
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14 }}>
                   {[1,2,3,4,5].map(n => (
@@ -1326,7 +1439,8 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
               </div>
               {feedbackStep === 0 && (
                 <div style={{ animation: "fadeUp .3s ease" }}>
-                  <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>Tap to rate your experience</p>
+                  <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 12, lineHeight: 1.5 }}>All feedback is anonymous. Thank you for taking the time — it helps us build something better for everyone.</p>
+                <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14 }}>Tap to rate your experience</p>
                   <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14 }}>
                     {[1,2,3,4,5].map(n => (
                       <button key={n} onClick={() => { setFeedbackRating(n); setTimeout(() => setFeedbackStep(1), 300); }}
