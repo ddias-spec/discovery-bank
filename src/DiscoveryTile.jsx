@@ -225,7 +225,7 @@ export const CSS = `
     .row{padding:10px 14px;gap:10px}
     .phase-head{padding:12px 14px}
     .gin{font-size:12px;padding:7px 10px}
-    .btn1,.btn2{font-size:12px;padding:9px 16px}
+    .btn1,.btn2{font-size:11px;padding:8px 14px}
     .badge{font-size:9px;padding:2px 6px}
     .select-card{padding:28px 18px!important;border-radius:16px!important}
     .select-card-title{font-size:16px!important}
@@ -233,11 +233,10 @@ export const CSS = `
     .role-label-full{display:none!important}
     .role-label-short{display:inline!important}
     .role-toggle-btn{font-size:12px!important;padding:8px 20px!important}
-    .feedback-btn-wrap{bottom:14px!important;right:14px!important}
-    .feedback-btn{width:42px!important;height:42px!important;border-radius:13px!important}
-    .feedback-label{display:none!important}
-    .feedback-modal{width:calc(100vw - 24px)!important;right:12px!important;left:12px!important;bottom:12px!important;border-radius:16px!important}
-    .feedback-modal-inner{padding:16px 14px 14px!important}
+    .theme-toggle{width:32px!important;height:32px!important;top:14px!important;right:14px!important;border-radius:9px!important}
+    .theme-toggle svg{width:14px!important;height:14px!important}
+    .home-feedback-btn{display:none!important}
+    .home-report-btn{display:none!important}
   }
 
   /* Narrow windows — switch to short label */
@@ -245,10 +244,7 @@ export const CSS = `
     .role-label-full{display:none!important}
     .role-label-short{display:inline!important}
     .role-toggle-btn{font-size:13px!important;padding:9px 24px!important}
-    .feedback-btn-wrap{bottom:18px!important;right:18px!important}
-    .feedback-label{display:none!important}
-    .feedback-modal{width:calc(100vw - 32px)!important;right:16px!important;left:16px!important;bottom:16px!important}
-    .feedback-modal-inner{padding:18px 16px 16px!important}
+    .theme-toggle{width:34px!important;height:34px!important;top:16px!important;right:16px!important}
   }
 
   /* Medium — show full labels */
@@ -471,6 +467,46 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     return o;
   };
 
+  // ── Feedback database functions ──
+  const [feedbackData, setFeedbackData] = useState({ total: 0, avg: 0, thisWeek: 0, categories: [], trending: null, recent: [] });
+
+  const submitFeedback = async (rating, category, message) => {
+    try {
+      // Load existing feedback array
+      // Save to Supabase feedback table
+      
+      
+      await supabase.from("feedback").insert({ rating, category, message });
+    } catch {}
+  };
+
+  const loadFeedbackReport = useCallback(async () => {
+    try {
+      const { data: items } = await supabase.from("feedback").select("*").order("created_at", { ascending: false });
+      if (!items?.length) return;
+      
+      
+      const total = items.length;
+      const avg = Math.round((items.reduce((s, i) => s + i.rating, 0) / total) * 10) / 10;
+      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+      const thisWeek = items.filter(i => new Date(i.created_at) >= weekAgo).length;
+      const catCount = {};
+      items.forEach(i => { catCount[i.category] = (catCount[i.category] || 0) + 1; });
+      const categories = Object.entries(catCount).sort((a, b) => b[1] - a[1]).map(([label, count]) => ({
+        label, count, pct: Math.round(count / total * 100),
+        color: label.includes("Feature") ? "var(--accent)" : label.includes("Bug") ? "var(--red)" : label.includes("Template") ? "var(--amber)" : label.includes("Design") ? "var(--amber)" : "var(--text3)",
+      }));
+      const topCat = categories[0]?.label || "—";
+      const recent = items.slice(0, 3).map(i => ({
+        emoji: ["😟","😕","😐","😊","🤩"][(i.rating || 1) - 1],
+        cat: i.category, msg: i.message || "", time: new Date(i.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+      }));
+      setFeedbackData({ total, avg, thisWeek: thisWeek || total, categories, trending: topCat, recent });
+    } catch {}
+  }, []);
+
+  useEffect(() => { loadFeedbackReport(); }, [loadFeedbackReport]);
+
   const copySingle = async (s) => {
     let t = "";
     if (notes.businessName) t += `Business: ${notes.businessName}\n`;
@@ -540,15 +576,18 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     <div data-theme={theme} className="wrap-outer" style={{ fontFamily: "var(--font)", background: "var(--bg)", color: "var(--text)", position: "relative", overflow: "hidden" }}>
       <style>{CSS}</style>
       {/* Theme toggle — fixed top right */}
-      <button onClick={toggleTheme} title={theme === "dark" ? "Switch to Light" : "Switch to Dark"}
+      <button className="theme-toggle" onClick={toggleTheme} title={theme === "dark" ? "Switch to Light" : "Switch to Dark"}
         style={{
           position: "fixed", top: 20, right: 20, zIndex: 10,
           width: 38, height: 38, borderRadius: 11,
           border: "1px solid var(--glass-border)", background: "var(--glass)",
           backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          color: "var(--text2)", padding: 0, transition: "all .3s",
+          color: "var(--text2)", padding: 0,
+          transition: "all .3s",
           boxShadow: "0 2px 8px var(--shadow)",
+          opacity: themeToggleVisible ? 1 : 0,
+          pointerEvents: themeToggleVisible ? "auto" : "none",
         }}
         onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.transform = "scale(1.08)"; }}
         onMouseLeave={e => { e.currentTarget.style.color = "var(--text2)"; e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.transform = "scale(1)"; }}
@@ -586,13 +625,37 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             ))}
           </div>
         </div>
-        {/* Credit */}
-        <div style={{ textAlign: "center", padding: "16px 16px 20px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 10, color: "var(--text2)", fontSize: 11, letterSpacing: "0.02em" }}>
-            <span style={{ width: 24, height: 1, background: "var(--glass-border)", display: "inline-block" }}/>
-            <span style={{ fontWeight: 700 }}>Created by Damani Joseph Dias</span>
-            <span style={{ width: 24, height: 1, background: "var(--glass-border)", display: "inline-block" }}/>
+        {/* Credit + Feedback button */}
+        <div style={{ padding: "16px 16px 20px", position: "relative" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, color: "var(--text2)", fontSize: 11, letterSpacing: "0.02em" }}>
+              <span style={{ width: 24, height: 1, background: "var(--glass-border)", display: "inline-block" }}/>
+              <span style={{ fontWeight: 700 }}>Created by Damani Joseph Dias</span>
+              <span style={{ width: 24, height: 1, background: "var(--glass-border)", display: "inline-block" }}/>
+            </div>
           </div>
+          {/* Feedback button — bottom right for non-admin users */}
+          {screen === "select" && session?.user?.email !== "ddias@squareup.com" && (
+            <button className="home-feedback-btn" onClick={() => { setFeedbackOpen(!feedbackOpen); setFeedbackReportOpen(false); setFeedbackStep(0); setFeedbackRating(0); setFeedbackCategory(""); setFeedbackMessage(""); }}
+              style={{
+                position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                background: "none", border: "none", cursor: "pointer", padding: 0,
+              }}
+            >
+              <div style={{
+                width: 40, height: 40, borderRadius: 13,
+                background: "var(--glass)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+                border: feedbackOpen ? "1px solid var(--accent)" : "1px solid var(--glass-border)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: feedbackOpen ? "var(--accent)" : "var(--text3)",
+                transition: "all .3s", boxShadow: "0 4px 20px var(--shadow)",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 1C5 1 1 4.6 1 9c0 2.4 1.2 4.5 3 5.9V19l3.5-2.1c.8.2 1.6.3 2.5.3 5 0 9-3.6 9-8s-4-8-9-8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+              </div>
+              <span style={{ fontSize: 8, fontWeight: 600, color: feedbackOpen ? "var(--accent)" : "var(--text3)", letterSpacing: "0.02em" }}>Feedback</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -750,6 +813,28 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
   // Announcement state
   const [announceOpen, setAnnounceOpen] = useState(false);
   const [feedbackReportOpen, setFeedbackReportOpen] = useState(false);
+  const [themeToggleVisible, setThemeToggleVisible] = useState(true);
+  const roleToggleRef = useRef(null);
+
+  useEffect(() => {
+    const wrap = document.querySelector(".wrap-outer");
+    if (!wrap) return;
+    const handleScroll = () => {
+      const toggle = document.querySelector(".theme-toggle");
+      const roleTrack = document.querySelector(".role-toggle-track");
+      if (!toggle || !roleTrack) { setThemeToggleVisible(true); return; }
+      const toggleRect = toggle.getBoundingClientRect();
+      const roleRect = roleTrack.getBoundingClientRect();
+      // Hide if they'd overlap vertically and horizontally
+      const overlapV = toggleRect.bottom > roleRect.top - 8 && toggleRect.top < roleRect.bottom + 8;
+      const overlapH = toggleRect.right > roleRect.left - 8 && toggleRect.left < roleRect.right + 8;
+      setThemeToggleVisible(!(overlapV && overlapH));
+    };
+    wrap.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => { wrap.removeEventListener("scroll", handleScroll); window.removeEventListener("scroll", handleScroll); };
+  }, [screen]);
 
   // ═══════════════════════════════════
   // SELECT SCREEN
@@ -873,75 +958,96 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "center", gap: 10, marginTop: 28, flexWrap: "wrap" }}>
-        <button onClick={() => { loadIndex(); setScreen("history"); }} className="btn2" style={{}}>
+      {/* Action buttons row */}
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-start", marginTop: 28, padding: "0 4px", position: "relative", minHeight: 58 }}>
+        {/* Report — admin only, far left */}
+        {session?.user?.email === "ddias@squareup.com" && (
+          <button className="home-report-btn" onClick={() => { setFeedbackReportOpen(!feedbackReportOpen); setFeedbackOpen(false); }}
+            style={{ position: "absolute", left: 4, top: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            <div style={{
+              width: 44, height: 44, borderRadius: 14,
+              background: "var(--glass)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+              border: feedbackReportOpen ? "1px solid var(--amber)" : "1px solid var(--glass-border)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: feedbackReportOpen ? "var(--amber)" : "var(--text3)",
+              transition: "all .3s", boxShadow: "0 4px 20px var(--shadow)",
+            }}>
+              <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M5 10V7M8 10V5M11 10V8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            </div>
+            <span style={{ fontSize: 9, fontWeight: 600, color: feedbackReportOpen ? "var(--amber)" : "var(--text3)", letterSpacing: "0.02em" }}>Report</span>
+          </button>
+        )}
+
+        {/* Saved Discoveries — center */}
+        <button onClick={() => { loadIndex(); setScreen("history"); }} className="btn2" style={{ flexShrink: 0 }}>
           <I.History/> Saved Discoveries
           {savedList.length > 0 && <span style={{ background: "var(--glass)", color: "var(--text3)", borderRadius: 8, padding: "1px 7px", fontSize: 10, fontWeight: 600, border: "1px solid var(--glass-border)" }}>{savedList.length}</span>}
         </button>
-        {session && (
-          <button onClick={() => db.signOut()} className="btn2" style={{ fontSize: 12, padding: "8px 14px" }}>
-            {session.user?.user_metadata?.avatar_url && (
-              <img src={session.user.user_metadata.avatar_url} alt="" style={{ width: 18, height: 18, borderRadius: "50%" }}/>
-            )}
-            Sign Out
+
+        {/* Feedback — admin only in this row, far right */}
+        {session?.user?.email === "ddias@squareup.com" && (
+          <button className="home-feedback-btn" onClick={() => { setFeedbackOpen(!feedbackOpen); setFeedbackReportOpen(false); setFeedbackStep(0); setFeedbackRating(0); setFeedbackCategory(""); setFeedbackMessage(""); }}
+            style={{ position: "absolute", right: 4, top: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            <div style={{
+              width: 44, height: 44, borderRadius: 14,
+              background: "var(--glass)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+              border: feedbackOpen ? "1px solid var(--accent)" : "1px solid var(--glass-border)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: feedbackOpen ? "var(--accent)" : "var(--text3)",
+              transition: "all .3s", boxShadow: "0 4px 20px var(--shadow)",
+            }}>
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M10 1C5 1 1 4.6 1 9c0 2.4 1.2 4.5 3 5.9V19l3.5-2.1c.8.2 1.6.3 2.5.3 5 0 9-3.6 9-8s-4-8-9-8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+            </div>
+            <span style={{ fontSize: 9, fontWeight: 600, color: feedbackOpen ? "var(--accent)" : "var(--text3)", letterSpacing: "0.02em" }}>Feedback</span>
           </button>
         )}
       </div>
 
-      {/* Floating Report — bottom left, admin only */}
-      {!feedbackReportOpen && session?.user?.email === "ddias@squareup.com" && (
-        <div className="report-btn-wrap" style={{ position: "fixed", bottom: 24, left: 24, zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-          <button onClick={() => { setFeedbackReportOpen(true); setFeedbackOpen(false); }}
-            style={{
-              width: 48, height: 48, borderRadius: 16,
-              background: "var(--glass)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-              border: "1px solid var(--glass-border)",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              color: "var(--text3)", padding: 0, transition: "all .3s cubic-bezier(.4,0,.2,1)",
-              boxShadow: "0 4px 20px var(--shadow)",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = "var(--amber)"; e.currentTarget.style.borderColor = "var(--amber)"; e.currentTarget.style.transform = "scale(1.1)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.transform = "scale(1)"; }}
-            title="Feedback report"
-          >
-            <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.2"/><path d="M5 10V7M8 10V5M11 10V8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+      {/* Sign out */}
+      {session && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+          <button onClick={() => db.signOut()} className="btn2" style={{ fontSize: 11, padding: "7px 14px", opacity: 0.7 }}>
+            {session.user?.user_metadata?.avatar_url && (
+              <img src={session.user.user_metadata.avatar_url} alt="" style={{ width: 16, height: 16, borderRadius: "50%" }}/>
+            )}
+            Sign Out
           </button>
-          <span className="feedback-label" style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", letterSpacing: "0.02em" }}>Report</span>
         </div>
       )}
 
-      {/* Feedback Report modal — bottom left */}
-      {feedbackReportOpen && screen === "select" && session?.user?.email === "ddias@squareup.com" && (
-        <div className="feedback-modal" style={{
-          position: "fixed", bottom: 24, left: 24, zIndex: 50,
-          width: 380, maxWidth: "calc(100vw - 48px)",
-          background: "var(--glass)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)",
-          border: "1px solid var(--glass-border)", borderRadius: 20,
-          boxShadow: "0 8px 40px rgba(0,0,0,0.2), 0 0 0 1px var(--glass-border)",
-          overflow: "hidden", animation: "fadeUp .35s cubic-bezier(.175,.885,.32,1.275)",
+      {/* Report expanded — below buttons */}
+      {feedbackReportOpen && screen === "select" && (
+        <div style={{
+          maxWidth: 420, margin: "16px auto 0",
+          maxHeight: "60vh", overflowY: "auto",
+          background: "rgba(255,255,255,0.02)", backdropFilter: "blur(60px) saturate(200%)", WebkitBackdropFilter: "blur(60px) saturate(200%)",
+          border: "1px solid var(--glass-border)", borderRadius: 16,
+          boxShadow: "0 4px 24px var(--shadow)",
+          overflow: "hidden auto", animation: "fadeUp .35s cubic-bezier(.175,.885,.32,1.275)",
+          WebkitOverflowScrolling: "touch",
         }}>
           <div style={{ padding: "16px 18px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <span style={{ fontSize: 10, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.04em", textTransform: "uppercase" }}>Feedback Report</span>
               <button onClick={() => setFeedbackReportOpen(false)}
-                style={{ background: "var(--glass)", border: "1px solid var(--glass-border)", borderRadius: 8, width: 28, height: 28, cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", borderRadius: 8, width: 28, height: 28, cursor: "pointer", color: "var(--text3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}
                 onMouseEnter={e => { e.currentTarget.style.color = "var(--text)"; }}
                 onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; }}
               >✕</button>
             </div>
-            {/* Metric cards */}
             <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-              {[{ label: "Responses", val: "24", color: "var(--text)" }, { label: "Avg Rating", val: "4.2", color: "var(--accent)" }, { label: "This Week", val: "6", color: "var(--text)" }].map(m => (
-                <div key={m.label} style={{ flex: 1, background: "var(--glass)", border: "1px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
+              {[{ label: "Responses", val: feedbackData.total || "—", color: "var(--text)" }, { label: "Avg Rating", val: feedbackData.avg || "—", color: "var(--accent)" }, { label: "This Week", val: feedbackData.thisWeek || "—", color: "var(--text)" }].map(m => (
+                <div key={m.label} style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
                   <div style={{ fontSize: 9, color: "var(--text3)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.03em" }}>{m.label}</div>
                   <div style={{ fontSize: 22, fontWeight: 700, color: m.color }}>{m.val}</div>
                 </div>
               ))}
             </div>
-            {/* Category breakdown */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.03em" }}>By Category</div>
-              {[{ label: "Feature Request", count: 14, pct: 58, color: "var(--accent)" }, { label: "Bug / Issue", count: 5, pct: 21, color: "var(--red)" }, { label: "Templates", count: 3, pct: 12, color: "var(--amber)" }, { label: "General", count: 2, pct: 8, color: "var(--text3)" }].map(c => (
+              {(feedbackData.categories.length ? feedbackData.categories : [{ label: "No feedback yet", count: 0, pct: 0, color: "var(--text3)" }]).map(c => (
                 <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 10, color: "var(--text2)", minWidth: 90 }}>{c.label}</span>
                   <div style={{ flex: 1, height: 6, background: "var(--glass-border)", borderRadius: 3, overflow: "hidden" }}>
@@ -951,29 +1057,26 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 </div>
               ))}
             </div>
-            {/* Trending */}
             <div style={{ background: "rgba(0,194,168,0.04)", border: "1px solid rgba(0,194,168,0.1)", borderRadius: 10, padding: "10px 12px", marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2 12l4-4 3 3 5-7" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 <span style={{ fontSize: 9, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.03em", textTransform: "uppercase" }}>Trending This Week</span>
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>PDF Export for Client Follow-ups</div>
-              <p style={{ fontSize: 10, color: "var(--text2)", margin: 0 }}>4 of 6 submissions this week</p>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{feedbackData.trending || "No data yet"}</div>
+              <p style={{ fontSize: 10, color: "var(--text2)", margin: 0 }}>{feedbackData.thisWeek ? `${feedbackData.thisWeek} submission${feedbackData.thisWeek === 1 ? "" : "s"} this week` : "Submit feedback to see trends"}</p>
             </div>
-            {/* Recommended */}
             <div style={{ background: "rgba(232,164,74,0.04)", border: "1px solid rgba(232,164,74,0.1)", borderRadius: 10, padding: "10px 12px", marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="var(--amber)" strokeWidth="1.3"/><path d="M8 5v3l2 1.5" stroke="var(--amber)" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 <span style={{ fontSize: 9, fontWeight: 700, color: "var(--amber)", letterSpacing: "0.03em", textTransform: "uppercase" }}>Recommended Next Build</span>
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>PDF Export</div>
-              <p style={{ fontSize: 10, color: "var(--text2)", margin: 0 }}>Most requested feature across all feedback</p>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", marginBottom: 2 }}>{feedbackData.categories[0]?.label || "Waiting for feedback"}</div>
+              <p style={{ fontSize: 10, color: "var(--text2)", margin: 0 }}>{feedbackData.total ? `Most requested across ${feedbackData.total} response${feedbackData.total === 1 ? "" : "s"}` : "Recommendations appear after first submissions"}</p>
             </div>
-            {/* Recent */}
             <div style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.03em" }}>Recent</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 140, overflowY: "auto" }}>
-              {[{ emoji: "🤩", cat: "Feature Request", msg: "PDF export for client follow-ups", time: "2h ago" }, { emoji: "😊", cat: "Bug / Issue", msg: "Copy to SF misses pain points", time: "Yesterday" }, { emoji: "🤩", cat: "General", msg: "Best tool we have", time: "2 days ago" }].map((f, i) => (
-                <div key={i} style={{ background: "var(--glass)", border: "1px solid var(--glass-border)", borderRadius: 8, padding: "8px 10px" }}>
+              {(feedbackData.recent.length ? feedbackData.recent : [{ emoji: "—", cat: "—", msg: "No feedback yet", time: "" }]).map((f, i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", borderRadius: 8, padding: "8px 10px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                       <span style={{ fontSize: 12 }}>{f.emoji}</span>
@@ -989,34 +1092,13 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
         </div>
       )}
 
-      {/* Floating Feedback — bottom right, home screen only */}
-      {!feedbackOpen && (
-        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-          <button onClick={() => { setFeedbackOpen(true); setFeedbackStep(0); setFeedbackRating(0); setFeedbackCategory(""); setFeedbackMessage(""); }}
-            style={{
-              width: 48, height: 48, borderRadius: 16,
-              background: "var(--glass)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-              border: "1px solid var(--glass-border)",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              color: "var(--text3)", padding: 0, transition: "all .3s cubic-bezier(.4,0,.2,1)",
-              boxShadow: "0 4px 20px var(--shadow)",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent)"; e.currentTarget.style.transform = "scale(1.1)"; e.currentTarget.style.boxShadow = "0 4px 24px var(--accent-glow)"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = "var(--text3)"; e.currentTarget.style.borderColor = "var(--glass-border)"; e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 20px var(--shadow)"; }}
-            title="Share feedback"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1C5 1 1 4.6 1 9c0 2.4 1.2 4.5 3 5.9V19l3.5-2.1c.8.2 1.6.3 2.5.3 5 0 9-3.6 9-8s-4-8-9-8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
-          </button>
-          <span className="feedback-label" style={{ fontSize: 10, fontWeight: 600, color: "var(--text3)", letterSpacing: "0.02em" }}>Feedback</span>
-        </div>
-      )}
+      {/* Feedback expanded — below buttons */}
       {feedbackOpen && screen === "select" && (
         <div style={{
-          position: "fixed", bottom: 24, right: 24, zIndex: 50,
-          width: 360, maxWidth: "calc(100vw - 48px)",
-          background: "var(--glass)", backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)",
-          border: "1px solid var(--glass-border)", borderRadius: 20,
-          boxShadow: "0 8px 40px rgba(0,0,0,0.2), 0 0 0 1px var(--glass-border)",
+          maxWidth: 420, margin: "16px auto 0",
+          background: "var(--glass)", backdropFilter: "blur(40px) saturate(200%)", WebkitBackdropFilter: "blur(40px) saturate(200%)",
+          border: "1px solid var(--glass-border)", borderRadius: 16,
+          boxShadow: "0 4px 24px var(--shadow)",
           overflow: "hidden", animation: "fadeUp .35s cubic-bezier(.175,.885,.32,1.275)",
         }}>
           <div style={{ height: 3, background: "var(--glass-border)" }}>
@@ -1042,13 +1124,13 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14 }}>
                   {[1,2,3,4,5].map(n => (
                     <button key={n} onClick={() => { setFeedbackRating(n); setTimeout(() => setFeedbackStep(1), 300); }}
-                      style={{ width: 44, height: 44, borderRadius: 13, fontSize: 20, border: feedbackRating === n ? "2px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackRating === n ? "rgba(0,194,168,0.1)" : "transparent", cursor: "pointer", transition: "all .25s cubic-bezier(.175,.885,.32,1.275)", transform: feedbackRating === n ? "scale(1.15)" : "scale(1)", boxShadow: feedbackRating === n ? "0 0 12px var(--accent-glow)" : "none" }}
+                      style={{ width: 48, height: 48, borderRadius: 14, fontSize: 22, border: feedbackRating === n ? "2px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackRating === n ? "rgba(0,194,168,0.1)" : "transparent", cursor: "pointer", transition: "all .25s cubic-bezier(.175,.885,.32,1.275)", transform: feedbackRating === n ? "scale(1.15)" : "scale(1)", boxShadow: feedbackRating === n ? "0 0 12px var(--accent-glow)" : "none" }}
                       onMouseEnter={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1.08)"; }}
                       onMouseLeave={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1)"; }}
                     >{["😟","😕","😐","😊","🤩"][n-1]}</button>
                   ))}
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text3)", padding: "0 6px" }}><span>Needs work</span><span>Love it</span></div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--text3)", padding: "0 8px" }}><span>Needs work</span><span>Love it</span></div>
               </div>
             )}
             {feedbackStep === 1 && (
@@ -1056,7 +1138,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
                   {["Bug / Issue", "Feature Request", "Design", "Templates", "General"].map(cat => (
                     <button key={cat} onClick={() => { setFeedbackCategory(cat); setTimeout(() => setFeedbackStep(2), 250); }}
-                      style={{ padding: "7px 14px", borderRadius: 9, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s", border: feedbackCategory === cat ? "1px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackCategory === cat ? "rgba(0,194,168,0.1)" : "transparent", color: feedbackCategory === cat ? "var(--accent)" : "var(--text2)" }}
+                      style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s", border: feedbackCategory === cat ? "1px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackCategory === cat ? "rgba(0,194,168,0.1)" : "transparent", color: feedbackCategory === cat ? "var(--accent)" : "var(--text2)" }}
                     >{cat}</button>
                   ))}
                 </div>
@@ -1066,24 +1148,24 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             {feedbackStep === 2 && (
               <div style={{ animation: "fadeUp .3s ease" }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                  <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(0,194,168,0.1)", color: "var(--accent)" }}>{["😟","😕","😐","😊","🤩"][feedbackRating-1]} {feedbackRating}/5</span>
-                  <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "var(--glass)", color: "var(--text2)", border: "1px solid var(--glass-border)" }}>{feedbackCategory}</span>
+                  <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(0,194,168,0.1)", color: "var(--accent)" }}>{["😟","😕","😐","😊","🤩"][feedbackRating-1]} {feedbackRating}/5</span>
+                  <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "var(--glass)", color: "var(--text2)", border: "1px solid var(--glass-border)" }}>{feedbackCategory}</span>
                 </div>
-                <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} placeholder="What's on your mind?…" className="gin" rows={3} style={{ minHeight: 70, marginBottom: 10, fontSize: 12 }}/>
+                <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} placeholder="What's on your mind?…" className="gin" rows={3} style={{ minHeight: 80, marginBottom: 12, fontSize: 13 }}/>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <button onClick={() => setFeedbackStep(1)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 11, fontFamily: "var(--font)" }}>← Back</button>
-                  <button onClick={async () => { setFeedbackSending(true); const subject = encodeURIComponent(`Discovery Bank Feedback — ${feedbackCategory} (${feedbackRating}/5)`); const body = encodeURIComponent(`Rating: ${feedbackRating}/5 ${["😟","😕","😐","😊","🤩"][feedbackRating-1]}\nCategory: ${feedbackCategory}\n\nFeedback:\n${feedbackMessage}\n\n---\nSent from Discovery Bank`); window.open(`mailto:ddias@squareup.com?subject=${subject}&body=${body}`, "_blank"); setTimeout(() => { setFeedbackSending(false); setFeedbackStep(3); }, 500); }} disabled={feedbackSending}
-                    className="btn1" style={{ padding: "8px 18px", fontSize: 12, opacity: feedbackSending ? 0.7 : 1 }}>{feedbackSending ? "Sending…" : "Send"}</button>
+                  <button onClick={async () => { setFeedbackSending(true); await submitFeedback(feedbackRating, feedbackCategory, feedbackMessage); loadFeedbackReport(); setTimeout(() => { setFeedbackSending(false); setFeedbackStep(3); }, 500); }} disabled={feedbackSending}
+                    className="btn1" style={{ padding: "9px 20px", fontSize: 13, opacity: feedbackSending ? 0.7 : 1 }}>{feedbackSending ? "Sending…" : "Send Feedback"}</button>
                 </div>
               </div>
             )}
             {feedbackStep === 3 && (
-              <div style={{ textAlign: "center", padding: "8px 0", animation: "fadeUp .3s ease" }}>
-                <div style={{ fontSize: 36, marginBottom: 10 }}>✨</div>
-                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>Feedback sent!</p>
-                <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 12, lineHeight: 1.6 }}>Discovery Bank is a passion project built outside of work hours, so popular requests get shipped twice a month. You'll be notified by email when updates land.</p>
-                <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 14, fontStyle: "italic" }}>— Damani</p>
-                <button onClick={() => { setFeedbackOpen(false); setFeedbackStep(0); }} className="btn2" style={{ margin: "0 auto", padding: "7px 16px", fontSize: 11 }}>Close</button>
+              <div style={{ textAlign: "center", padding: "10px 0", animation: "fadeUp .3s ease" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>✨</div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: "var(--text)", marginBottom: 6 }}>Feedback sent!</p>
+                <p style={{ fontSize: 12, color: "var(--text2)", marginBottom: 14, lineHeight: 1.6 }}>Discovery Bank is a passion project built outside of work hours, so popular requests get shipped twice a month. You'll be notified by email when updates land.</p>
+                <p style={{ fontSize: 11, color: "var(--text3)", marginBottom: 16, fontStyle: "italic" }}>— Damani</p>
+                <button onClick={() => { setFeedbackOpen(false); setFeedbackStep(0); }} className="btn2" style={{ margin: "0 auto", padding: "8px 18px", fontSize: 12 }}>Close</button>
               </div>
             )}
           </div>
@@ -1474,7 +1556,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                   <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} placeholder="What's on your mind? Be as brief or detailed as you like…" className="gin" rows={3} style={{ minHeight: 80, marginBottom: 12, fontSize: 13 }}/>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <button onClick={() => setFeedbackStep(1)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text3)", fontSize: 11, fontFamily: "var(--font)" }}>← Back</button>
-                    <button onClick={async () => { setFeedbackSending(true); const subject = encodeURIComponent(`Discovery Bank Feedback — ${feedbackCategory} (${feedbackRating}/5)`); const body = encodeURIComponent(`Rating: ${feedbackRating}/5 ${["😟","😕","😐","😊","🤩"][feedbackRating-1]}\nCategory: ${feedbackCategory}\n\nFeedback:\n${feedbackMessage}\n\n---\nSent from Discovery Bank`); window.open(`mailto:ddias@squareup.com?subject=${subject}&body=${body}`, "_blank"); setTimeout(() => { setFeedbackSending(false); setFeedbackStep(3); }, 500); }} disabled={feedbackSending}
+                    <button onClick={async () => { setFeedbackSending(true); await submitFeedback(feedbackRating, feedbackCategory, feedbackMessage); loadFeedbackReport(); setTimeout(() => { setFeedbackSending(false); setFeedbackStep(3); }, 500); }} disabled={feedbackSending}
                       className="btn1" style={{ padding: "9px 20px", fontSize: 13, opacity: feedbackSending ? 0.7 : 1 }}>{feedbackSending ? "Sending…" : "Send Feedback"}</button>
                   </div>
                 </div>
