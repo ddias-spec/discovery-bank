@@ -118,7 +118,7 @@ const BDR_CLOSING = {
   sections: [
     { id: "bdr_timeline", label: "Timeline", placeholder: "", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "timeline", options: ["ASAP", "1–3 weeks", "1 month", "2 months", "3 months", "4–6 months", "6+ months"], dropdownPlaceholder: "Select timeline…" },
-    { id: "bdr_barriers", label: "Contract Length", placeholder: "Lock-in period? End date? Any break clauses?…", noPain: true, noGoal: true,
+    { id: "bdr_barriers", label: "Contract Length", placeholder: "Lock-in period? End date? Any break clauses?…", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "contract", options: ["No contract", "Monthly rolling", "3 months", "6 months", "12 months", "12+ months", "Unknown"], dropdownPlaceholder: "Contract length…" },
     { id: "bdr_dm_contact", label: "Confirmed DM Contact Details", placeholder: "Email address, mobile number…", noPain: true, noGoal: true,
       dropdown: true, dropdownType: "confirmed", options: ["Yes — confirmed", "No — not yet", "Partial — email only", "Partial — phone only"], dropdownPlaceholder: "Contact confirmed?…" },
@@ -128,10 +128,15 @@ const BDR_CLOSING = {
   ]
 };
 
+// BDR-only tickbox added to Key Details — just a checkbox, no notes/pain/goal
+const CALL_RECORDED = { id: "call_recorded", label: "Call recorded language confirmed?", placeholder: "", noPain: true, noGoal: true, noNotes: true };
+
 const getPhases = (v, role) => {
   const closing = role === "bdr" ? BDR_CLOSING : SHARED_CLOSING;
-  if (v === "restaurant") return [RESTAURANT_TOP, RESTAURANT_SETUP, closing];
-  return [RETAIL_TOP, RETAIL_SETUP, closing];
+  const baseTop = v === "restaurant" ? RESTAURANT_TOP : RETAIL_TOP;
+  const top = role === "bdr" ? { ...baseTop, sections: [CALL_RECORDED, ...baseTop.sections] } : baseTop;
+  const setup = v === "restaurant" ? RESTAURANT_SETUP : RETAIL_SETUP;
+  return [top, setup, closing];
 };
 const getAllSections = (v, role) => getPhases(v, role).flatMap(p => p.sections);
 
