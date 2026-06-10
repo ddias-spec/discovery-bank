@@ -117,7 +117,7 @@ const BDR_CLOSING = {
   title: "Next Steps & Handoff",
   sections: [
     { id: "bdr_timeline", label: "Timeline", placeholder: "", noPain: true, noGoal: true, noNotes: true,
-      dropdown: true, dropdownType: "timeline", options: ["ASAP", "1–3 weeks", "1 month", "2 months", "3 months", "4–6 months", "6+ months"], dropdownPlaceholder: "Select timeline…" },
+      dropdown: true, dropdownType: "timeline", options: ["ASAP", "1–3 weeks", "1–3 months", "3–6 months"], dropdownPlaceholder: "Select timeline…" },
     { id: "bdr_barriers", label: "Contract Length", placeholder: "Lock-in period? End date? Any break clauses?…", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "contract", options: ["No contract", "Monthly rolling", "Inside 3 months", "6 months +"], dropdownPlaceholder: "Contract length…" },
     { id: "bdr_dm_contact", label: "Confirmed DM Contact Details", placeholder: "Email address, mobile number…", noPain: true, noGoal: true, noNotes: true,
