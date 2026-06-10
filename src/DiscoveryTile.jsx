@@ -118,13 +118,10 @@ const BDR_CLOSING = {
   sections: [
     { id: "bdr_timeline", label: "Timeline", placeholder: "", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "timeline", options: ["ASAP", "1–3 weeks", "1–3 months", "3–6 months"], dropdownPlaceholder: "Select timeline…" },
-    { id: "bdr_barriers", label: "Contract Length", placeholder: "Lock-in period? End date? Any break clauses?…", noPain: true, noGoal: true, noNotes: true,
-      dropdown: true, dropdownType: "contract", options: ["No contract", "Monthly rolling", "Inside 3 months", "6 months +"], dropdownPlaceholder: "Contract length…" },
     { id: "bdr_dm_contact", label: "Confirmed DM Contact Details", placeholder: "Email address, mobile number…", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "confirmed", options: ["Yes — confirmed", "No — not yet", "Partial — email only", "Partial — phone only"], dropdownPlaceholder: "Contact confirmed?…" },
     { id: "bdr_outcome", label: "Outcome", placeholder: "", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "outcome", options: ["Hot Handoff → AE Now", "Booked Meeting"], dropdownPlaceholder: "Select outcome…" },
-    { id: "bdr_meeting_details", label: "Meeting Date & Time", placeholder: "Date, time, attendees, AE name if known…", noPain: true, noGoal: true },
   ]
 };
 
@@ -135,7 +132,9 @@ const getPhases = (v, role) => {
   const closing = role === "bdr" ? BDR_CLOSING : SHARED_CLOSING;
   const baseTop = v === "restaurant" ? RESTAURANT_TOP : RETAIL_TOP;
   const top = role === "bdr" ? { ...baseTop, sections: [CALL_RECORDED, ...baseTop.sections] } : baseTop;
-  const setup = v === "restaurant" ? RESTAURANT_SETUP : RETAIL_SETUP;
+  const baseSetup = v === "restaurant" ? RESTAURANT_SETUP : RETAIL_SETUP;
+  // BDRs don't need the Hardware section — strip it from their Setup phase
+  const setup = role === "bdr" ? { ...baseSetup, sections: baseSetup.sections.filter(s => s.id !== "hardware") } : baseSetup;
   return [top, setup, closing];
 };
 const getAllSections = (v, role) => getPhases(v, role).flatMap(p => p.sections);
