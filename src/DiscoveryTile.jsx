@@ -120,7 +120,7 @@ const BDR_CLOSING = {
       dropdown: true, dropdownType: "timeline", options: ["ASAP", "1–3 weeks", "1 month", "2 months", "3 months", "4–6 months", "6+ months"], dropdownPlaceholder: "Select timeline…" },
     { id: "bdr_barriers", label: "Contract Length", placeholder: "Lock-in period? End date? Any break clauses?…", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "contract", options: ["No contract", "Monthly rolling", "3 months", "6 months", "12 months", "12+ months", "Unknown"], dropdownPlaceholder: "Contract length…" },
-    { id: "bdr_dm_contact", label: "Confirmed DM Contact Details", placeholder: "Email address, mobile number…", noPain: true, noGoal: true,
+    { id: "bdr_dm_contact", label: "Confirmed DM Contact Details", placeholder: "Email address, mobile number…", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "confirmed", options: ["Yes — confirmed", "No — not yet", "Partial — email only", "Partial — phone only"], dropdownPlaceholder: "Contact confirmed?…" },
     { id: "bdr_outcome", label: "Outcome", placeholder: "", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "outcome", options: ["Hot Handoff → AE Now", "Booked Meeting"], dropdownPlaceholder: "Select outcome…" },
