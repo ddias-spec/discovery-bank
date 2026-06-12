@@ -163,25 +163,26 @@ const composeMeeting = (n) => {
 export const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
   :root,[data-theme="dark"]{
-    --bg:#13131a;--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);
-    --glass-hover:rgba(255,255,255,0.055);--glass-active:rgba(0,194,168,0.05);
-    --text:#E8E4DF;--text2:rgba(232,228,223,0.55);--text3:rgba(232,228,223,0.3);
+    --bg:#0d0d0d;--glass:rgba(255,255,255,0.03);--glass-border:rgba(255,255,255,0.06);
+    --glass-hover:rgba(255,255,255,0.05);--glass-active:rgba(255,255,255,0.06);
+    --pill:rgba(255,255,255,0.08);
+    --text:#ffffff;--text2:rgba(255,255,255,0.5);--text3:rgba(255,255,255,0.4);
     --accent:#00C2A8;--accent2:#00a892;--accent-glow:rgba(0,194,168,0.15);
     --amber:#E8A44A;--red:#E8706A;--orange:#E8A44A;
-    --input-bg:rgba(255,255,255,0.03);--input-border:rgba(255,255,255,0.06);--input-focus-bg:rgba(0,194,168,0.025);
-    --row-border:rgba(255,255,255,0.04);--cb-border:rgba(255,255,255,0.13);--cb-check:#13131a;--btn1-text:#13131a;
-    --btn2-bg:rgba(255,255,255,0.04);--btn2-hover:rgba(255,255,255,0.08);--btn2-border-hover:rgba(255,255,255,0.12);
-    --shadow:rgba(0,0,0,0.15);--pain-bg:rgba(232,112,106,0.06);--pain-border:rgba(232,112,106,0.14);
+    --input-bg:rgba(255,255,255,0.03);--input-border:rgba(255,255,255,0.06);--input-focus-bg:rgba(255,255,255,0.05);
+    --row-border:rgba(255,255,255,0.05);--cb-border:rgba(255,255,255,0.15);--cb-check:#0d0d0d;--btn1-text:#0d0d0d;
+    --btn2-bg:rgba(255,255,255,0.03);--btn2-hover:rgba(255,255,255,0.08);--btn2-border-hover:rgba(255,255,255,0.1);
+    --shadow:rgba(0,0,0,0.25);--pain-bg:rgba(232,112,106,0.06);--pain-border:rgba(232,112,106,0.14);
     --goal-bg:rgba(232,164,74,0.06);--goal-border:rgba(232,164,74,0.14);
-    --orb:rgba(0,194,168,0.05);--logo-fill:white;--logo-bg:rgba(255,255,255,0.06);
-    --marquee-fill:rgba(255,255,255,0.55);--marquee-inner:#13131a;--credit:#fff;
-    --cal-bg:rgba(20,20,30,0.85);--cal-glow:rgba(255,255,255,0.06);--cal-hover:rgba(255,255,255,0.04);
-    --badge-neutral:rgba(255,255,255,0.06);
+    --orb:rgba(0,194,168,0.05);--logo-fill:white;--logo-bg:rgba(255,255,255,0.08);
+    --marquee-fill:rgba(255,255,255,0.55);--marquee-inner:#0d0d0d;--credit:#fff;
+    --cal-bg:rgba(18,18,18,0.9);--cal-glow:rgba(255,255,255,0.06);--cal-hover:rgba(255,255,255,0.04);
+    --badge-neutral:rgba(255,255,255,0.08);
     --radius:16px;--radius-sm:10px;--font:'Outfit',-apple-system,sans-serif;
   }
   [data-theme="light"]{
     --bg:#f3f4f6;--glass:rgba(255,255,255,0.45);--glass-border:rgba(0,0,0,0.1);
-    --glass-hover:rgba(255,255,255,0.75);--glass-active:rgba(0,168,146,0.05);
+    --glass-hover:rgba(255,255,255,0.75);--glass-active:rgba(0,0,0,0.05);--pill:rgba(0,0,0,0.06);
     --text:#1a1a2e;--text2:rgba(26,26,46,0.55);--text3:rgba(26,26,46,0.3);
     --accent:#00a892;--accent2:#008f7a;--accent-glow:rgba(0,168,146,0.12);
     --amber:#b06e10;--red:#b83d37;--orange:#b06e10;
@@ -209,20 +210,21 @@ export const CSS = `
   .glass{background:var(--glass);backdrop-filter:blur(40px) saturate(200%);-webkit-backdrop-filter:blur(40px) saturate(200%);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 8px var(--shadow);transition:all .4s}
   .gin{width:100%;background:var(--input-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--input-border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;font-family:var(--font);color:var(--text);outline:none;transition:all .3s;line-height:1.5;resize:vertical}
   .gin::placeholder{color:var(--text3)}
-  .gin:focus{border-color:rgba(0,194,168,0.35);background:var(--input-focus-bg);box-shadow:0 0 0 3px var(--accent-glow)}
-  .row{display:flex;align-items:flex-start;gap:12px;padding:11px 20px;border-bottom:1px solid var(--row-border);transition:all .25s}
+  .gin:focus{border-color:rgba(255,255,255,0.18);background:var(--input-focus-bg);box-shadow:0 0 0 3px rgba(255,255,255,0.05)}
+  .row{display:flex;align-items:flex-start;gap:14px;padding:15px 24px;border-bottom:1px solid var(--row-border);transition:all .25s}
   .row:last-child{border-bottom:none}
   .row.on{background:var(--glass-active)}
   .cb{width:22px;height:22px;min-width:22px;border-radius:7px;border:1.5px solid var(--cb-border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all .25s;color:var(--cb-check);padding:0}
   .cb.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
   .cbtn{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;margin-top:2px;transition:color .2s}
-  .cbtn:hover{color:var(--accent)}
+  .cbtn:hover{color:var(--text)}
   .btn1{display:flex;align-items:center;gap:8px;background:var(--accent);color:var(--btn1-text);border:none;border-radius:var(--radius-sm);padding:11px 22px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .3s;letter-spacing:-.01em}
   .btn1:hover{background:var(--accent2);box-shadow:0 0 20px var(--accent-glow);transform:translateY(-1px)}
   .btn2{display:flex;align-items:center;gap:6px;background:var(--btn2-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--text);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;transition:all .3s}
   .btn2:hover{background:var(--btn2-hover);border-color:var(--btn2-border-hover)}
-  .badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;letter-spacing:.02em;white-space:nowrap}
-  .phase-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;user-select:none;transition:background .2s}
+  .badge{font-size:9px;font-weight:600;padding:2px 7px;border-radius:6px;letter-spacing:.02em;white-space:nowrap}
+  .count-pill{font-size:10px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--pill);color:var(--text2);white-space:nowrap}
+  .phase-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;cursor:pointer;user-select:none;transition:background .2s}
   .phase-head:hover{background:var(--glass-hover)}
   .tag-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;border:1px solid;transition:all .2s}
   .tag-btn:hover{transform:translateY(-1px)}
@@ -279,8 +281,8 @@ export const CSS = `
   @media(min-width:768px){
     .wrap-outer{padding:32px 24px}
     .container{max-width:800px}
-    .row{padding:13px 24px}
-    .phase-head{padding:16px 24px}
+    .row{padding:17px 26px}
+    .phase-head{padding:20px 26px}
     .select-card{padding:44px 32px!important}
     .select-card-title{font-size:20px!important}
     .select-icon{width:64px!important;height:64px!important;border-radius:18px!important}
@@ -290,8 +292,8 @@ export const CSS = `
   @media(min-width:1024px){
     .wrap-outer{padding:40px 32px}
     .container{max-width:880px}
-    .row{padding:14px 28px}
-    .phase-head{padding:16px 28px}
+    .row{padding:18px 30px}
+    .phase-head{padding:22px 30px}
     .gin{font-size:14px;padding:10px 14px}
     .btn1{padding:12px 26px;font-size:14px}
     .btn2{padding:11px 22px;font-size:14px}
@@ -317,7 +319,7 @@ export const CSS = `
 export const I = {
   Check: () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Copy: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10 4V2.5A1.5 1.5 0 008.5 1H2.5A1.5 1.5 0 001 2.5v6A1.5 1.5 0 002.5 10H4" stroke="currentColor" strokeWidth="1.3"/></svg>,
-  Done: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="var(--accent)"/><path d="M4 7L6 9L10 5" stroke="#13131a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Done: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" fill="var(--accent)"/><path d="M4 7L6 9L10 5" stroke="#0d0d0d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   History: () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.3"/><path d="M8 5v3l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
   Back: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
   Search: () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.3"/><path d="M9 9l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
@@ -771,7 +773,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: isOn ? "var(--accent)" : "var(--text)", transition: "color .2s", letterSpacing: "-.01em" }}>{s.label}</span>
+            <span style={{ fontSize: 13, fontWeight: isOn ? 700 : 500, color: isOn ? "var(--text)" : "var(--text2)", transition: "color .2s", letterSpacing: "-.01em" }}>{s.label}</span>
             {/* Show selected dropdown value as inline badge */}
             {s.dropdown && dropdownVal && !readOnly && (
               <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", background: "rgba(0,194,168,0.1)", padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(0,194,168,0.15)" }}>{dropdownVal}</span>
@@ -987,10 +989,9 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             position: "absolute", top: 4, bottom: 4,
             width: "calc(50% - 2px)",
             left: role === "ae" ? 4 : "calc(50% - 2px)",
-            background: "var(--accent)",
+            background: "var(--pill)",
             borderRadius: 11,
             transition: "left .4s cubic-bezier(.175,.885,.32,1.275)",
-            boxShadow: "0 2px 12px var(--accent-glow)",
             zIndex: 0,
           }}/>
           {[
@@ -1005,7 +1006,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 fontFamily: "var(--font)", cursor: "pointer", border: "none",
                 background: "transparent", whiteSpace: "nowrap",
                 transition: "color .35s cubic-bezier(.4,0,.2,1)",
-                color: role === r.key ? "var(--btn1-text)" : "var(--text3)",
+                color: role === r.key ? "var(--text)" : "var(--text3)",
                 textAlign: "center",
               }}
             >
@@ -1271,9 +1272,9 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             style={{
               padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
               fontFamily: "var(--font)", cursor: "pointer", transition: "all .2s",
-              border: dateFilter === f.key ? "1px solid var(--accent)" : "1px solid rgba(255,255,255,0.08)",
-              background: dateFilter === f.key ? "rgba(0,194,168,0.08)" : "rgba(255,255,255,0.04)",
-              color: dateFilter === f.key ? "var(--accent)" : "var(--text2)",
+              border: "1px solid var(--glass-border)",
+              background: dateFilter === f.key ? "var(--pill)" : "transparent",
+              color: dateFilter === f.key ? "var(--text)" : "var(--text2)",
             }}
           >{f.label}</button>
         ))}
@@ -1421,9 +1422,9 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             className={allCopied ? "btn1" : "btn2"}>{allCopied ? <><I.Done/> Copied</> : <><I.Copy/> Copy for Salesforce</>}</button>
         </div>
         {dph.map(phase => (
-          <div key={phase.phase} className="glass" style={{ marginBottom: 10 }}>
-            <div style={{ padding: "12px 20px", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".06em" }}>{phase.phase}</span>
+          <div key={phase.phase} className="glass" style={{ marginBottom: 16 }}>
+            <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--glass-border)" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>{phase.phase}</span>
               <span style={{ fontSize: 14, fontWeight: 600, marginLeft: 10 }}>{phase.title}</span>
             </div>
             {phase.sections.map(s => <DiscoveryRow key={s.id} s={s} readOnly rNotes={r.notes} rChecked={r.checked} rExtras={r.sectionExtras}/>)}
@@ -1488,14 +1489,14 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
       {phases.map((phase, pi) => {
         const isOpen = openPhases[phase.phase] !== false;
         return (
-          <div key={phase.phase} className="glass" style={{ marginBottom: 10, animation: `fadeUp ${0.4 + pi * 0.05}s ease` }}>
+          <div key={phase.phase} className="glass" style={{ marginBottom: 16, animation: `fadeUp ${0.4 + pi * 0.05}s ease` }}>
             <div className="phase-head" onClick={() => togglePhase(phase.phase)}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <I.Chev open={isOpen}/>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".06em" }}>{phase.phase}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".06em" }}>{phase.phase}</span>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{phase.title}</span>
               </div>
-              <div style={{ fontSize: 11, color: "var(--text3)" }}>{phase.sections.filter(s => checked[s.id]).length}/{phase.sections.filter(s => !s.noCheck).length}</div>
+              <div className="count-pill">{phase.sections.filter(s => checked[s.id]).length}/{phase.sections.filter(s => !s.noCheck).length}</div>
             </div>
             {isOpen && phase.sections.map(s => <DiscoveryRow key={s.id} s={s}/>)}
           </div>
