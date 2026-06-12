@@ -574,6 +574,13 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     try { const data = await db.loadDiscovery(id); if (data) { setDetailRecord({ id: data.discovery_id, vertical: data.vertical, role: data.role, businessName: data.business_name, sfUrl: data.sf_url, recordType: data.record_type, notes: data.notes, checked: data.checked, sectionExtras: data.section_extras, completion: data.completion, savedAt: data.saved_at }); setScreen("detail"); } } catch {}
   };
   const deleteDiscovery = async (id) => {
+    try {
+      await db.deleteDiscovery(id);
+      setSavedList(prev => prev.filter(d => d.id !== id));
+    } catch (e) {
+      console.error("Failed to delete discovery", e);
+    }
+    setDeleteConfirm(null);
   };
 
   const filtered = savedList.filter(d => {
