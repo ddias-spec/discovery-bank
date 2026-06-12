@@ -140,7 +140,6 @@ const getPhases = (v, role) => {
 const getAllSections = (v, role) => getPhases(v, role).flatMap(p => p.sections);
 
 // Booked-meeting date/time picker helpers (BDR Outcome → "Booked Meeting")
-const MTG_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 // Time slots: 8:30 am → 5:00 pm in 15-min steps
 const MTG_TIMES = (() => {
   const out = [];
@@ -153,9 +152,9 @@ const MTG_TIMES = (() => {
   return out;
 })();
 const composeMeeting = (n) => {
-  const d = n.bdr_meeting_day, m = n.bdr_meeting_month, t = n.bdr_meeting_time;
-  if (!d || !m || !t) return "";
-  return `${d} ${MTG_MONTHS[parseInt(m, 10) - 1]}, ${t}`;
+  const dt = n.bdr_meeting_date, t = n.bdr_meeting_time;
+  if (!dt || !t) return "";
+  return `${dt}, ${t}`;
 };
 
 // ═══════════════════════════════════════════
@@ -821,13 +820,16 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 {opts.map(o => <option key={o.v} value={o.v} style={{ background: "var(--bg)", color: "var(--text)" }}>{o.l}</option>)}
               </select>
             );
-            const days = Array.from({ length: 31 }, (_, i) => ({ v: String(i + 1), l: String(i + 1) }));
-            const months = MTG_MONTHS.map((m, i) => ({ v: String(i + 1), l: m }));
+            const base = new Date(); base.setHours(0, 0, 0, 0);
+            const dates = Array.from({ length: 90 }, (_, i) => {
+              const d = new Date(base); d.setDate(base.getDate() + i);
+              const label = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+              return { v: label, l: label };
+            });
             const times = MTG_TIMES.map(t => ({ v: t, l: t }));
             return (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4, alignItems: "center" }}>
-                {sel(notes.bdr_meeting_day || "", v => setNote("bdr_meeting_day", v), days, "Day")}
-                {sel(notes.bdr_meeting_month || "", v => setNote("bdr_meeting_month", v), months, "Month")}
+                {sel(notes.bdr_meeting_date || "", v => setNote("bdr_meeting_date", v), dates, "Date")}
                 <span style={{ color: "var(--text3)", fontSize: 12, fontWeight: 600, padding: "0 2px" }}>at</span>
                 {sel(notes.bdr_meeting_time || "", v => setNote("bdr_meeting_time", v), times, "Time")}
                 {composeMeeting(notes) && (
