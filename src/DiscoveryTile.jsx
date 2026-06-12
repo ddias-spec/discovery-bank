@@ -53,15 +53,15 @@ const RESTAURANT_SETUP = {
   phase: "Setup",
   title: "Current Setup & Providers",
   sections: [
-    { id: "order_flow", label: "Order Flow / Coursing", placeholder: "Table or counter orders? Coursing? Hold and fire?…" },
-    { id: "pos", label: "POS", placeholder: "Current system, how long on it…" },
-    { id: "payments", label: "Payment Processor & Reconciliation", placeholder: "Who processes cards? Rates? Reconciliation time?…" },
-    { id: "online_ordering", label: "Online Ordering / Other Channels", placeholder: "Own website? UberEats, Deliveroo, Just Eat? Dine-in, takeaway, delivery, catering…" },
-    { id: "loyalty_marketing", label: "Loyalty / Gift Cards / Marketing", placeholder: "Loyalty programme? Gift cards? Email/SMS campaigns?…" },
-    { id: "inventory", label: "Inventory", placeholder: "Ingredient-level tracking? Stock management?…" },
-    { id: "payroll_staff", label: "Staff Management", placeholder: "Scheduling, timecards, tips, tip pooling…" },
-    { id: "integrations", label: "Integrations / Booking System", placeholder: "Accounting (Xero/QBO), reservations, delivery platforms, other tools?…" },
-    { id: "hardware", label: "Hardware", placeholder: "Terminals, registers, KDS, printers, handhelds, kiosks…" },
+    { id: "order_flow", label: "Order Flow / Coursing", placeholder: "Table or counter orders? Coursing? Hold and fire?…", noCheck: true },
+    { id: "pos", label: "POS", placeholder: "Current system, how long on it…", noCheck: true },
+    { id: "payments", label: "Payment Processor & Reconciliation", placeholder: "Who processes cards? Rates? Reconciliation time?…", noCheck: true },
+    { id: "online_ordering", label: "Online Ordering / Other Channels", placeholder: "Own website? UberEats, Deliveroo, Just Eat? Dine-in, takeaway, delivery, catering…", noCheck: true },
+    { id: "loyalty_marketing", label: "Loyalty / Gift Cards / Marketing", placeholder: "Loyalty programme? Gift cards? Email/SMS campaigns?…", noCheck: true },
+    { id: "inventory", label: "Inventory", placeholder: "Ingredient-level tracking? Stock management?…", noCheck: true },
+    { id: "payroll_staff", label: "Staff Management", placeholder: "Scheduling, timecards, tips, tip pooling…", noCheck: true },
+    { id: "integrations", label: "Integrations / Booking System", placeholder: "Accounting (Xero/QBO), reservations, delivery platforms, other tools?…", noCheck: true },
+    { id: "hardware", label: "Hardware", placeholder: "Terminals, registers, KDS, printers, handhelds, kiosks…", noCheck: true },
   ]
 };
 
@@ -69,14 +69,14 @@ const RETAIL_SETUP = {
   phase: "Setup",
   title: "Current Setup & Providers",
   sections: [
-    { id: "pos", label: "POS / Till System", placeholder: "Current system, how long on it, contract end date…" },
-    { id: "payments", label: "Payment Processor & Reconciliation", placeholder: "Who processes cards? Rates? How long to reconcile end of day?…" },
-    { id: "ecommerce", label: "Online / eCommerce", placeholder: "Sell online? Shopify, WooCommerce, Square Online? Synced with in-store stock?…" },
-    { id: "loyalty_marketing", label: "Loyalty / Gift Cards / Marketing", placeholder: "Loyalty programme? Gift cards (physical/digital)? Email/SMS campaigns? What tools?…" },
-    { id: "inventory", label: "Inventory & Stock Management", placeholder: "Stock tracking? Barcode scanning? Purchase orders? Vendor management? Stockouts?…" },
-    { id: "payroll", label: "Staff Management", placeholder: "How do they manage payroll? Rotas? Clock in/out?…" },
-    { id: "integrations", label: "Integrations", placeholder: "Accounting (Xero/QBO), eCommerce platform, shipping, other tools?…" },
-    { id: "hardware", label: "Hardware", placeholder: "Terminals, registers, barcode scanners, receipt printers, cash drawers, handhelds…" },
+    { id: "pos", label: "POS / Till System", placeholder: "Current system, how long on it, contract end date…", noCheck: true },
+    { id: "payments", label: "Payment Processor & Reconciliation", placeholder: "Who processes cards? Rates? How long to reconcile end of day?…", noCheck: true },
+    { id: "ecommerce", label: "Online / eCommerce", placeholder: "Sell online? Shopify, WooCommerce, Square Online? Synced with in-store stock?…", noCheck: true },
+    { id: "loyalty_marketing", label: "Loyalty / Gift Cards / Marketing", placeholder: "Loyalty programme? Gift cards (physical/digital)? Email/SMS campaigns? What tools?…", noCheck: true },
+    { id: "inventory", label: "Inventory & Stock Management", placeholder: "Stock tracking? Barcode scanning? Purchase orders? Vendor management? Stockouts?…", noCheck: true },
+    { id: "payroll", label: "Staff Management", placeholder: "How do they manage payroll? Rotas? Clock in/out?…", noCheck: true },
+    { id: "integrations", label: "Integrations", placeholder: "Accounting (Xero/QBO), eCommerce platform, shipping, other tools?…", noCheck: true },
+    { id: "hardware", label: "Hardware", placeholder: "Terminals, registers, barcode scanners, receipt printers, cash drawers, handhelds…", noCheck: true },
   ]
 };
 
