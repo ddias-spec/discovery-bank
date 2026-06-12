@@ -119,7 +119,7 @@ const BDR_CLOSING = {
     { id: "bdr_timeline", label: "Timeline", placeholder: "", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "timeline", options: ["ASAP", "1–3 weeks", "1–3 months", "3–6 months"], dropdownPlaceholder: "Select timeline…" },
     { id: "bdr_dm_contact", label: "Confirmed DM Contact Details", placeholder: "Email address, mobile number…", noPain: true, noGoal: true, noNotes: true,
-      dropdown: true, dropdownType: "confirmed", options: ["Yes — confirmed", "No — not yet", "Partial — email only", "Partial — phone only"], dropdownPlaceholder: "Contact confirmed?…" },
+      dropdown: true, dropdownType: "confirmed", options: ["Yes — confirmed", "No — not yet"], dropdownPlaceholder: "Contact confirmed?…" },
     { id: "bdr_outcome", label: "Outcome", placeholder: "", noPain: true, noGoal: true, noNotes: true,
       dropdown: true, dropdownType: "outcome", options: ["Hot Handoff → AE Now", "Booked Meeting"], dropdownPlaceholder: "Select outcome…" },
   ]
