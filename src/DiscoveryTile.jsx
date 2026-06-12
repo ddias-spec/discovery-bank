@@ -1413,19 +1413,6 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
           <span style={{ fontSize: 13, color: "var(--text)", fontWeight: 500 }}>{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-        <div className="glass" style={{ flex: 1, minWidth: 200, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 22, height: 22, minWidth: 22, display: "flex", alignItems: "center", justifyContent: "center", transition: "all .3s" }}>
-            <svg width="20" height="14" viewBox="0 0 48 32" fill="none">
-              <path d="M20.2 5.6c1.8-1.9 4.3-3 7-3 3.5 0 6.6 1.8 8.3 4.6 1.4-.6 2.9-1 4.5-1 6.2 0 8 5.6 8 8.8 0 4.9-3.6 8.8-8 8.8h-2.5c-1.2 2.4-3.7 4-6.5 4-1.3 0-2.5-.3-3.6-.9-1.3 2.2-3.7 3.7-6.4 3.7-2.4 0-4.5-1.1-5.9-2.8-1 .4-2.1.6-3.2.6C5.4 28.4 0 24.2 0 19s3.4-8.4 7.6-8.4c.9 0 3.1.2 3.1.2.9-2.8 4-5.2 7.5-5.2h2z"
-                fill={recType(notes.sfUrl) === "Lead" ? "var(--amber)" : recType(notes.sfUrl) === "Opportunity" ? "var(--accent)" : "rgba(255,255,255,0.2)"}
-                style={{ transition: "fill .3s" }}/>
-            </svg>
-          </div>
-          <NoteInput value={notes.sfUrl || ""} onChange={v => setNote("sfUrl", v)} placeholder="Salesforce URL…" rows={0} className="" style={{ flex: 1, border: "none", outline: "none", fontSize: 13, fontFamily: "var(--font)", color: "var(--text)", background: "transparent", height: 34, padding: 0 }}/>
-          {recType(notes.sfUrl) && <span className="badge" style={{ background: recType(notes.sfUrl) === "Lead" ? "rgba(251,191,36,0.15)" : "rgba(0,214,50,0.12)", color: recType(notes.sfUrl) === "Lead" ? "var(--amber)" : "var(--accent)" }}>{recType(notes.sfUrl) === "Lead" ? "Lead" : "Opp"}</span>}
-        </div>
-      </div>
 
       {/* Phases */}
       {phases.map((phase, pi) => {
