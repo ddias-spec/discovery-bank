@@ -33,9 +33,9 @@ const RESTAURANT_TOP = {
   phase: "Key Info",
   title: "Key Details",
   sections: [
-    { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noPain: true, noGoal: true },
-    { id: "gpv", label: "GPV", placeholder: "Annual card processing volume…", noPain: true, noGoal: true },
-    { id: "service_and_flow", label: "Service Type", placeholder: "FSR, QSR, café, pub, bar… Covers per day/week…", noPain: true, noGoal: true },
+    { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noPain: true, noGoal: true, noCheck: true },
+    { id: "gpv", label: "GPV", placeholder: "Annual card processing volume…", noPain: true, noGoal: true, noCheck: true },
+    { id: "service_and_flow", label: "Service Type", placeholder: "FSR, QSR, café, pub, bar… Covers per day/week…", noPain: true, noGoal: true, noCheck: true },
   ]
 };
 
@@ -43,8 +43,8 @@ const RETAIL_TOP = {
   phase: "Key Info",
   title: "Key Details",
   sections: [
-    { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noPain: true, noGoal: true },
-    { id: "gpv", label: "GPV", placeholder: "Annual card processing volume…", noPain: true, noGoal: true },
+    { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noPain: true, noGoal: true, noCheck: true },
+    { id: "gpv", label: "GPV", placeholder: "Annual card processing volume…", noPain: true, noGoal: true, noCheck: true },
     { id: "retail_type", label: "Type of Retail", placeholder: "Apparel, home & gifts, garden centre, electronics, grocery, alcohol…", noPain: true, noGoal: true },
   ]
 };
@@ -428,7 +428,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
 
   const phases = vertical ? getPhases(vertical, role) : [];
   const allSections = vertical ? getAllSections(vertical, role) : [];
-  const total = allSections.length;
+  const total = allSections.filter(s => !s.noCheck).length;
   const doneItems = Object.values(checked).filter(Boolean).length;
   const pct = total ? Math.round((doneItems / total) * 100) : 0;
 
@@ -467,7 +467,8 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
       });
     });
     const d = Object.values(c).filter(Boolean).length;
-    o += `═══════════════════════════════\nDiscovery Completion: ${d}/${getAllSections(v, r).length} (${Math.round(d / getAllSections(v, r).length * 100)}%)\n`;
+    const ct = getAllSections(v, r).filter(s => !s.noCheck).length;
+    o += `═══════════════════════════════\nDiscovery Completion: ${d}/${ct} (${Math.round(d / ct * 100)}%)\n`;
     return o;
   };
 
@@ -730,7 +731,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
 
     return (
       <div className={`row ${isOn ? "on" : ""}`}>
-        {readOnly ? (
+        {s.noCheck ? null : readOnly ? (
           <div className={`cb ${isOn ? "on" : ""}`} style={{ cursor: "default" }}>{isOn && <I.Check/>}</div>
         ) : (
           <button onMouseDown={e => { e.preventDefault(); toggle(s.id); }} className={`cb ${isOn ? "on" : ""}`}>{isOn && <I.Check/>}</button>
@@ -1334,7 +1335,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
   if (screen === "detail" && detailRecord) {
     const r = detailRecord;
     const dph = getPhases(r.vertical, r.role || "ae");
-    const dt = getAllSections(r.vertical, r.role || "ae").length;
+    const dt = getAllSections(r.vertical, r.role || "ae").filter(s => !s.noCheck).length;
     const dd = Object.values(r.checked).filter(Boolean).length;
     const dp = Math.round(dd / dt * 100);
     return wrap(
@@ -1425,7 +1426,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: ".06em" }}>{phase.phase}</span>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{phase.title}</span>
               </div>
-              <div style={{ fontSize: 11, color: "var(--text3)" }}>{phase.sections.filter(s => checked[s.id]).length}/{phase.sections.length}</div>
+              <div style={{ fontSize: 11, color: "var(--text3)" }}>{phase.sections.filter(s => checked[s.id]).length}/{phase.sections.filter(s => !s.noCheck).length}</div>
             </div>
             {isOpen && phase.sections.map(s => <DiscoveryRow key={s.id} s={s}/>)}
           </div>
