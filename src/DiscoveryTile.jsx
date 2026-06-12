@@ -218,8 +218,8 @@ export const CSS = `
   .cb.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
   .cbtn{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;margin-top:2px;transition:color .2s}
   .cbtn:hover{color:var(--text)}
-  .btn1{display:flex;align-items:center;gap:8px;background:var(--accent);color:var(--btn1-text);border:none;border-radius:var(--radius-sm);padding:11px 22px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .3s;letter-spacing:-.01em}
-  .btn1:hover{background:var(--accent2);box-shadow:0 0 20px var(--accent-glow);transform:translateY(-1px)}
+  .btn1{display:flex;align-items:center;gap:8px;background:var(--pill);color:var(--text);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:11px 22px;font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all .3s;letter-spacing:-.01em}
+  .btn1:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.16);transform:translateY(-1px)}
   .btn2{display:flex;align-items:center;gap:6px;background:var(--btn2-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--text);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;transition:all .3s}
   .btn2:hover{background:var(--btn2-hover);border-color:var(--btn2-border-hover)}
   .badge{font-size:9px;font-weight:600;padding:2px 7px;border-radius:6px;letter-spacing:.02em;white-space:nowrap}
@@ -1199,7 +1199,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14 }}>
                   {[1,2,3,4,5].map(n => (
                     <button key={n} onClick={() => { setFeedbackRating(n); setTimeout(() => setFeedbackStep(1), 300); }}
-                      style={{ width: 48, height: 48, borderRadius: 14, fontSize: 22, border: feedbackRating === n ? "2px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackRating === n ? "rgba(0,194,168,0.1)" : "transparent", cursor: "pointer", transition: "all .25s cubic-bezier(.175,.885,.32,1.275)", transform: feedbackRating === n ? "scale(1.15)" : "scale(1)", boxShadow: feedbackRating === n ? "0 0 12px var(--accent-glow)" : "none" }}
+                      style={{ width: 48, height: 48, borderRadius: 14, fontSize: 22, border: feedbackRating === n ? "2px solid rgba(255,255,255,0.25)" : "1px solid var(--glass-border)", background: feedbackRating === n ? "var(--pill)" : "transparent", cursor: "pointer", transition: "all .25s cubic-bezier(.175,.885,.32,1.275)", transform: feedbackRating === n ? "scale(1.15)" : "scale(1)", boxShadow: "none" }}
                       onMouseEnter={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1.08)"; }}
                       onMouseLeave={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1)"; }}
                     >{["😟","😕","😐","😊","🤩"][n-1]}</button>
@@ -1213,7 +1213,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
                   {["Bug / Issue", "Feature Request", "Design", "Templates", "General"].map(cat => (
                     <button key={cat} onClick={() => { setFeedbackCategory(cat); setTimeout(() => setFeedbackStep(2), 250); }}
-                      style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s", border: feedbackCategory === cat ? "1px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackCategory === cat ? "rgba(0,194,168,0.1)" : "transparent", color: feedbackCategory === cat ? "var(--accent)" : "var(--text2)" }}
+                      style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s", border: "1px solid var(--glass-border)", background: feedbackCategory === cat ? "var(--pill)" : "transparent", color: feedbackCategory === cat ? "var(--text)" : "var(--text2)" }}
                     >{cat}</button>
                   ))}
                 </div>
@@ -1223,7 +1223,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             {feedbackStep === 2 && (
               <div style={{ animation: "fadeUp .3s ease" }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                  <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(0,194,168,0.1)", color: "var(--accent)" }}>{["😟","😕","😐","😊","🤩"][feedbackRating-1]} {feedbackRating}/5</span>
+                  <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "var(--pill)", color: "var(--text)" }}>{["😟","😕","😐","😊","🤩"][feedbackRating-1]} {feedbackRating}/5</span>
                   <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "var(--glass)", color: "var(--text2)", border: "1px solid var(--glass-border)" }}>{feedbackCategory}</span>
                 </div>
                 <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} placeholder="What's on your mind?…" className="gin" rows={3} style={{ minHeight: 80, marginBottom: 12, fontSize: 13 }}/>
@@ -1588,7 +1588,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                   <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 14 }}>
                     {[1,2,3,4,5].map(n => (
                       <button key={n} onClick={() => { setFeedbackRating(n); setTimeout(() => setFeedbackStep(1), 300); }}
-                        style={{ width: 48, height: 48, borderRadius: 14, fontSize: 22, border: feedbackRating === n ? "2px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackRating === n ? "rgba(0,194,168,0.1)" : "transparent", cursor: "pointer", transition: "all .25s cubic-bezier(.175,.885,.32,1.275)", transform: feedbackRating === n ? "scale(1.15)" : "scale(1)", boxShadow: feedbackRating === n ? "0 0 12px var(--accent-glow)" : "none" }}
+                        style={{ width: 48, height: 48, borderRadius: 14, fontSize: 22, border: feedbackRating === n ? "2px solid rgba(255,255,255,0.25)" : "1px solid var(--glass-border)", background: feedbackRating === n ? "var(--pill)" : "transparent", cursor: "pointer", transition: "all .25s cubic-bezier(.175,.885,.32,1.275)", transform: feedbackRating === n ? "scale(1.15)" : "scale(1)", boxShadow: "none" }}
                         onMouseEnter={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1.08)"; }}
                         onMouseLeave={e => { if (feedbackRating !== n) e.currentTarget.style.transform = "scale(1)"; }}
                       >{["😟","😕","😐","😊","🤩"][n-1]}</button>
@@ -1602,7 +1602,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
                     {["Bug / Issue", "Feature Request", "Design", "Templates", "General"].map(cat => (
                       <button key={cat} onClick={() => { setFeedbackCategory(cat); setTimeout(() => setFeedbackStep(2), 250); }}
-                        style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s", border: feedbackCategory === cat ? "1px solid var(--accent)" : "1px solid var(--glass-border)", background: feedbackCategory === cat ? "rgba(0,194,168,0.1)" : "transparent", color: feedbackCategory === cat ? "var(--accent)" : "var(--text2)" }}
+                        style={{ padding: "8px 16px", borderRadius: 10, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)", cursor: "pointer", transition: "all .25s", border: "1px solid var(--glass-border)", background: feedbackCategory === cat ? "var(--pill)" : "transparent", color: feedbackCategory === cat ? "var(--text)" : "var(--text2)" }}
                       >{cat}</button>
                     ))}
                   </div>
@@ -1612,7 +1612,7 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
               {feedbackStep === 2 && (
                 <div style={{ animation: "fadeUp .3s ease" }}>
                   <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                    <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "rgba(0,194,168,0.1)", color: "var(--accent)" }}>{["😟","😕","😐","😊","🤩"][feedbackRating-1]} {feedbackRating}/5</span>
+                    <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "var(--pill)", color: "var(--text)" }}>{["😟","😕","😐","😊","🤩"][feedbackRating-1]} {feedbackRating}/5</span>
                     <span style={{ padding: "3px 9px", borderRadius: 6, fontSize: 10, fontWeight: 600, background: "var(--glass)", color: "var(--text2)", border: "1px solid var(--glass-border)" }}>{feedbackCategory}</span>
                   </div>
                   <textarea value={feedbackMessage} onChange={e => setFeedbackMessage(e.target.value)} placeholder="What's on your mind? Be as brief or detailed as you like…" className="gin" rows={3} style={{ minHeight: 80, marginBottom: 12, fontSize: 13 }}/>
