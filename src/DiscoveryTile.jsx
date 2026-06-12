@@ -56,12 +56,12 @@ const RESTAURANT_SETUP = {
     { id: "order_flow", label: "Order Flow / Coursing", placeholder: "Table or counter orders? Coursing? Hold and fire?…" },
     { id: "pos", label: "POS", placeholder: "Current system, how long on it…" },
     { id: "payments", label: "Payment Processor & Reconciliation", placeholder: "Who processes cards? Rates? Reconciliation time?…" },
-    { id: "hardware", label: "Hardware", placeholder: "Terminals, registers, KDS, printers, handhelds, kiosks…" },
     { id: "online_ordering", label: "Online Ordering / Other Channels", placeholder: "Own website? UberEats, Deliveroo, Just Eat? Dine-in, takeaway, delivery, catering…" },
     { id: "loyalty_marketing", label: "Loyalty / Gift Cards / Marketing", placeholder: "Loyalty programme? Gift cards? Email/SMS campaigns?…" },
     { id: "inventory", label: "Inventory", placeholder: "Ingredient-level tracking? Stock management?…" },
     { id: "payroll_staff", label: "Staff Management", placeholder: "Scheduling, timecards, tips, tip pooling…" },
     { id: "integrations", label: "Integrations / Booking System", placeholder: "Accounting (Xero/QBO), reservations, delivery platforms, other tools?…" },
+    { id: "hardware", label: "Hardware", placeholder: "Terminals, registers, KDS, printers, handhelds, kiosks…" },
   ]
 };
 
@@ -71,12 +71,12 @@ const RETAIL_SETUP = {
   sections: [
     { id: "pos", label: "POS / Till System", placeholder: "Current system, how long on it, contract end date…" },
     { id: "payments", label: "Payment Processor & Reconciliation", placeholder: "Who processes cards? Rates? How long to reconcile end of day?…" },
-    { id: "hardware", label: "Hardware", placeholder: "Terminals, registers, barcode scanners, receipt printers, cash drawers, handhelds…" },
     { id: "ecommerce", label: "Online / eCommerce", placeholder: "Sell online? Shopify, WooCommerce, Square Online? Synced with in-store stock?…" },
     { id: "loyalty_marketing", label: "Loyalty / Gift Cards / Marketing", placeholder: "Loyalty programme? Gift cards (physical/digital)? Email/SMS campaigns? What tools?…" },
     { id: "inventory", label: "Inventory & Stock Management", placeholder: "Stock tracking? Barcode scanning? Purchase orders? Vendor management? Stockouts?…" },
     { id: "payroll", label: "Staff Management", placeholder: "How do they manage payroll? Rotas? Clock in/out?…" },
     { id: "integrations", label: "Integrations", placeholder: "Accounting (Xero/QBO), eCommerce platform, shipping, other tools?…" },
+    { id: "hardware", label: "Hardware", placeholder: "Terminals, registers, barcode scanners, receipt printers, cash drawers, handhelds…" },
   ]
 };
 
