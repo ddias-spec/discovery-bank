@@ -139,6 +139,14 @@ const getPhases = (v, role) => {
 };
 const getAllSections = (v, role) => getPhases(v, role).flatMap(p => p.sections);
 
+// Booked-meeting date/time picker helpers (BDR Outcome → "Booked Meeting")
+const MTG_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const composeMeeting = (n) => {
+  const d = n.bdr_meeting_day, m = n.bdr_meeting_month, y = n.bdr_meeting_year, h = n.bdr_meeting_hour, min = n.bdr_meeting_minute;
+  if (!d || !m || !y || h === undefined || h === "" || min === undefined || min === "") return "";
+  return `${d} ${MTG_MONTHS[parseInt(m, 10) - 1]} ${y}, ${h}:${min}`;
+};
+
 // ═══════════════════════════════════════════
 // STYLES
 // ═══════════════════════════════════════════
@@ -452,6 +460,10 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
         const dropVal = n[s.id + "_dropdown"] || "";
         if (dropVal) o += `${c[s.id] ? "✓" : "○"} ${s.label}: [${dropVal}] ${n[s.id] || ""}\n`;
         else o += `${c[s.id] ? "✓" : "○"} ${s.label}: ${n[s.id] || ""}\n`;
+        if (s.dropdownType === "outcome" && dropVal === "Booked Meeting") {
+          const when = composeMeeting(n);
+          if (when) o += `   📅 Meeting Date & Time: ${when}\n`;
+        }
         const ex = ext[s.id];
         if (ex) {
           ex.pains?.forEach((p, i) => {
@@ -521,6 +533,10 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
     const dropVal = notes[s.id + "_dropdown"] || "";
     if (dropVal) t += `[${dropVal}] `;
     t += notes[s.id] || "";
+    if (s.dropdownType === "outcome" && dropVal === "Booked Meeting") {
+      const when = composeMeeting(notes);
+      if (when) t += `\n  Meeting Date & Time: ${when}`;
+    }
     const ex = sectionExtras[s.id];
     if (ex) {
       ex.pains?.forEach((p, i) => { if (p.pain) t += `\n  Pain ${i+1}: ${p.pain} | Impact: ${p.impact} | Quantify: ${p.quantify} | Position: ${p.position}`; });
@@ -781,6 +797,43 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
                 background: "rgba(0,194,168,0.1)", color: "var(--accent)", border: "1px solid rgba(0,194,168,0.2)",
               }}>{(rNotes?.[s.id + "_dropdown"]) || "Not selected"}</span>
             </div>
+          )}
+
+          {/* Booked-meeting date/time picker — only when outcome is "Booked Meeting" */}
+          {s.dropdownType === "outcome" && !readOnly && dropdownVal === "Booked Meeting" && (() => {
+            const yNow = new Date().getFullYear();
+            const sel = (val, onCh, opts, ph) => (
+              <select value={val} onChange={e => onCh(e.target.value)}
+                style={{ padding: "7px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)",
+                  cursor: "pointer", border: "1px solid var(--glass-border)", background: "var(--glass)",
+                  color: val ? "var(--text)" : "var(--text3)", outline: "none" }}>
+                <option value="">{ph}</option>
+                {opts.map(o => <option key={o.v} value={o.v} style={{ background: "var(--bg)", color: "var(--text)" }}>{o.l}</option>)}
+              </select>
+            );
+            const days = Array.from({ length: 31 }, (_, i) => ({ v: String(i + 1), l: String(i + 1) }));
+            const months = MTG_MONTHS.map((m, i) => ({ v: String(i + 1), l: m }));
+            const years = [yNow, yNow + 1].map(y => ({ v: String(y), l: String(y) }));
+            const hours = Array.from({ length: 24 }, (_, i) => ({ v: String(i).padStart(2, "0"), l: String(i).padStart(2, "0") }));
+            const mins = ["00", "15", "30", "45"].map(m => ({ v: m, l: m }));
+            return (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4, alignItems: "center" }}>
+                {sel(notes.bdr_meeting_day || "", v => setNote("bdr_meeting_day", v), days, "Day")}
+                {sel(notes.bdr_meeting_month || "", v => setNote("bdr_meeting_month", v), months, "Month")}
+                {sel(notes.bdr_meeting_year || "", v => setNote("bdr_meeting_year", v), years, "Year")}
+                <span style={{ color: "var(--text3)", fontSize: 12, fontWeight: 600, padding: "0 2px" }}>at</span>
+                {sel(notes.bdr_meeting_hour || "", v => setNote("bdr_meeting_hour", v), hours, "HH")}
+                <span style={{ color: "var(--text3)", fontWeight: 700 }}>:</span>
+                {sel(notes.bdr_meeting_minute || "", v => setNote("bdr_meeting_minute", v), mins, "MM")}
+                {composeMeeting(notes) && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", background: "rgba(0,194,168,0.1)", padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(0,194,168,0.15)" }}>{composeMeeting(notes)}</span>
+                )}
+              </div>
+            );
+          })()}
+          {/* Read-only booked-meeting date/time */}
+          {s.dropdownType === "outcome" && readOnly && (rNotes?.[s.id + "_dropdown"]) === "Booked Meeting" && composeMeeting(rNotes || {}) && (
+            <div style={{ marginBottom: 4, fontSize: 12, color: "var(--text2)" }}>📅 {composeMeeting(rNotes || {})}</div>
           )}
 
           {/* Notes input */}
