@@ -35,7 +35,7 @@ const RESTAURANT_TOP = {
   sections: [
     { id: "dm", label: "Decision Maker(s)", placeholder: "Name, title, contact…", noPain: true, noGoal: true },
     { id: "gpv", label: "GPV", placeholder: "Annual card processing volume…", noPain: true, noGoal: true },
-    { id: "service_and_flow", label: "Service Type / Covers", placeholder: "FSR, QSR, café, pub, bar… Covers per day/week…", noPain: true, noGoal: true },
+    { id: "service_and_flow", label: "Service Type", placeholder: "FSR, QSR, café, pub, bar… Covers per day/week…", noPain: true, noGoal: true },
   ]
 };
 
