@@ -823,6 +823,8 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             const base = new Date(); base.setHours(0, 0, 0, 0);
             const dates = Array.from({ length: 90 }, (_, i) => {
               const d = new Date(base); d.setDate(base.getDate() + i);
+              return d;
+            }).filter(d => d.getDay() !== 0 && d.getDay() !== 6).map(d => {
               const label = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
               return { v: label, l: label };
             });
