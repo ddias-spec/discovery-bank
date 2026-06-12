@@ -141,10 +141,21 @@ const getAllSections = (v, role) => getPhases(v, role).flatMap(p => p.sections);
 
 // Booked-meeting date/time picker helpers (BDR Outcome → "Booked Meeting")
 const MTG_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// Time slots: 8:30 am → 5:00 pm in 15-min steps
+const MTG_TIMES = (() => {
+  const out = [];
+  for (let mins = 8 * 60 + 30; mins <= 17 * 60; mins += 15) {
+    const h24 = Math.floor(mins / 60), mm = mins % 60;
+    const ap = h24 < 12 ? "am" : "pm";
+    const h12 = ((h24 + 11) % 12) + 1;
+    out.push(`${h12}:${String(mm).padStart(2, "0")} ${ap}`);
+  }
+  return out;
+})();
 const composeMeeting = (n) => {
-  const d = n.bdr_meeting_day, m = n.bdr_meeting_month, y = n.bdr_meeting_year, h = n.bdr_meeting_hour, min = n.bdr_meeting_minute;
-  if (!d || !m || !y || h === undefined || h === "" || min === undefined || min === "") return "";
-  return `${d} ${MTG_MONTHS[parseInt(m, 10) - 1]} ${y}, ${h}:${min}`;
+  const d = n.bdr_meeting_day, m = n.bdr_meeting_month, t = n.bdr_meeting_time;
+  if (!d || !m || !t) return "";
+  return `${d} ${MTG_MONTHS[parseInt(m, 10) - 1]}, ${t}`;
 };
 
 // ═══════════════════════════════════════════
@@ -801,7 +812,6 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
 
           {/* Booked-meeting date/time picker — only when outcome is "Booked Meeting" */}
           {s.dropdownType === "outcome" && !readOnly && dropdownVal === "Booked Meeting" && (() => {
-            const yNow = new Date().getFullYear();
             const sel = (val, onCh, opts, ph) => (
               <select value={val} onChange={e => onCh(e.target.value)}
                 style={{ padding: "7px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600, fontFamily: "var(--font)",
@@ -813,18 +823,13 @@ export default function DiscoveryTile({ session, theme: themeProp, toggleTheme: 
             );
             const days = Array.from({ length: 31 }, (_, i) => ({ v: String(i + 1), l: String(i + 1) }));
             const months = MTG_MONTHS.map((m, i) => ({ v: String(i + 1), l: m }));
-            const years = [yNow, yNow + 1].map(y => ({ v: String(y), l: String(y) }));
-            const hours = Array.from({ length: 24 }, (_, i) => ({ v: String(i).padStart(2, "0"), l: String(i).padStart(2, "0") }));
-            const mins = ["00", "15", "30", "45"].map(m => ({ v: m, l: m }));
+            const times = MTG_TIMES.map(t => ({ v: t, l: t }));
             return (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4, alignItems: "center" }}>
                 {sel(notes.bdr_meeting_day || "", v => setNote("bdr_meeting_day", v), days, "Day")}
                 {sel(notes.bdr_meeting_month || "", v => setNote("bdr_meeting_month", v), months, "Month")}
-                {sel(notes.bdr_meeting_year || "", v => setNote("bdr_meeting_year", v), years, "Year")}
                 <span style={{ color: "var(--text3)", fontSize: 12, fontWeight: 600, padding: "0 2px" }}>at</span>
-                {sel(notes.bdr_meeting_hour || "", v => setNote("bdr_meeting_hour", v), hours, "HH")}
-                <span style={{ color: "var(--text3)", fontWeight: 700 }}>:</span>
-                {sel(notes.bdr_meeting_minute || "", v => setNote("bdr_meeting_minute", v), mins, "MM")}
+                {sel(notes.bdr_meeting_time || "", v => setNote("bdr_meeting_time", v), times, "Time")}
                 {composeMeeting(notes) && (
                   <span style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", background: "rgba(0,194,168,0.1)", padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(0,194,168,0.15)" }}>{composeMeeting(notes)}</span>
                 )}
